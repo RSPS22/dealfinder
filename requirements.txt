@@ -1,5 +1,2 @@
 flask
-pandas
-jinja2
-python-docx
 gunicorn

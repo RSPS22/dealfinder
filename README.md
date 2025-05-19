@@ -1,3 +1,3 @@
 # Deal Finder App
 
-Hosted version for Render deployment.
+Minimal working example for deployment on Render.
