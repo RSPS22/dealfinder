@@ -43,11 +43,11 @@ def upload():
         properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
         properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
 
-        comps_df = comps_df[comps_df['Living Area'] > 0]
-        comps_df['$/Sqft'] = comps_df['Sold Price'] / comps_df['Living Area']
+        comps_df = comps_df[comps_df['Living Square Feet'] > 0]
+        comps_df['$/Sqft'] = comps_df['Last Sale Amount'] / comps_df['Living Square Feet']
         avg_psf = comps_df['$/Sqft'].mean()
 
-        properties_df['ARV'] = properties_df['Living Area'] * avg_psf
+        properties_df['ARV'] = properties_df['Living Square Feet'] * avg_psf
 
         def calculate_offer(row):
             try:
