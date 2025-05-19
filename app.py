@@ -48,8 +48,6 @@ def upload():
             properties_df['Follow-Up Sent'] = False
 
         properties_df['ARV'] = properties_df['Listing Price'] * 1.1
-        properties_df['Offer Price'] = properties_df.apply(
-            lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95), axis=1
 
 def is_high_potential(row):
     if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']):
@@ -57,8 +55,6 @@ def is_high_potential(row):
     return False
 
         properties_df['High Potential'] = properties_df.apply(is_high_potential, axis=1)
-            lambda row: row['Offer Price'] < row['Listing Price'] * 0.8,
-            axis=1
 
         for i, row in properties_df.iterrows():
             filename = f"LOI_{row['Id']}.docx"
