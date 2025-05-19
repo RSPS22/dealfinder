@@ -32,23 +32,38 @@ def upload():
             return jsonify(success=False, message="Missing required files.")
 
         prop_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(prop_file.filename))
+        comp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(comp_file.filename))
         prop_file.save(prop_path)
+        comp_file.save(comp_path)
+
         properties_df = pd.read_csv(prop_path)
+        comps_df = pd.read_csv(comp_path)
+
+        if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
+            return jsonify(success=False, message="Missing 'Id' or 'Listing Price' column.")
+
+        if 'Living Area' not in properties_df.columns or 'Living Area' not in comps_df.columns or 'Sold Price' not in comps_df.columns:
+            return jsonify(success=False, message="Missing 'Living Area' or 'Sold Price' in files.")
 
         properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
         properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
         properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
 
-        properties_df['ARV'] = properties_df['Listing Price'] * 1.1
+        comps_df = comps_df[comps_df['Living Area'] > 0]
+        comps_df['$/Sqft'] = comps_df['Sold Price'] / comps_df['Living Area']
+        avg_psf = comps_df['$/Sqft'].mean()
+
+        properties_df['ARV'] = properties_df['Living Area'] * avg_psf
+
         properties_df['Offer Price'] = properties_df.apply(
             lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95)
-            if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) and row['ARV'] > 10 and row['Listing Price'] > 10 else 0,
+            if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) else 0,
             axis=1
         )
 
-        # Apply correct high potential logic
         properties_df['High Potential'] = properties_df.apply(
-            lambda row: row['Offer Price'] <= row['ARV'] * 0.55 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
+            lambda row: row['Offer Price'] <= row['ARV'] * 0.55
+            if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
             axis=1
         )
 
