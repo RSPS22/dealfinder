@@ -51,7 +51,7 @@ $(document).ready(function () {
       data.forEach(row => {
         const tr = $('<tr>').attr('data-id', row['Id']);
         keys.forEach(k => {
-          tr.append(`<td>${row[k]}</td>`);
+          tr.append(`<td>${row[k] ?? ''}</td>`);
         });
         tr.append(`<td><input type="checkbox" class="loi-sent" ${row['LOI Sent'] ? 'checked' : ''}></td>`);
         tr.append(`<td><input type="checkbox" class="follow-up-sent" ${row['Follow-Up Sent'] ? 'checked' : ''}></td>`);

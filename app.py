@@ -38,12 +38,9 @@ def upload():
         if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
             return jsonify(success=False, message="Missing 'Id' or 'Listing Price' column.")
 
-        if 'Condition Override' not in properties_df.columns:
-            properties_df['Condition Override'] = 'Medium'
-        if 'LOI Sent' not in properties_df.columns:
-            properties_df['LOI Sent'] = False
-        if 'Follow-Up Sent' not in properties_df.columns:
-            properties_df['Follow-Up Sent'] = False
+        properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
+        properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
+        properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
 
         properties_df['ARV'] = properties_df['Listing Price'] * 1.1
         properties_df['Offer Price'] = properties_df.apply(
@@ -83,7 +80,17 @@ def is_high_potential(row):
 
 @app.route('/data')
 def data():
-    return properties_df.fillna('').to_json(orient='records')
+    global properties_df
+    try:
+        df = properties_df.copy()
+        for col in ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File']:
+            if col not in df.columns:
+                df[col] = ''
+        return df.fillna('').to_json(orient='records')
+    except Exception as e:
+        print("DATA ROUTE ERROR:", e)
+        traceback.print_exc()
+        return jsonify([])
 
 @app.route('/save_override', methods=['POST'])
 def save_override():
