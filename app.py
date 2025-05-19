@@ -39,16 +39,6 @@ def upload():
         properties_df = pd.read_csv(prop_path)
         comps_df = pd.read_csv(comp_path)
 
-        # Normalize column names
-        properties_df.columns = properties_df.columns.str.strip().str.lower()
-        comps_df.columns = comps_df.columns.str.strip().str.lower()
-
-        required_prop_cols = ['id', 'listing price', 'living area']
-        required_comp_cols = ['living area', 'sold price']
-
-        if not all(col in properties_df.columns for col in required_prop_cols) or not all(col in comps_df.columns for col in required_comp_cols):
-            return jsonify(success=False, message="Missing 'Living Area' or 'Sold Price' in files.")
-
         properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
         properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
         properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
