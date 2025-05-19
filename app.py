@@ -97,8 +97,9 @@ def calculate_arv_and_offer(properties, comps):
         if not filtered.empty:
         filtered = filtered.copy()
             filtered['Weight'] = filtered.apply(score, axis=1)
+        if 'Weight' in filtered.columns:
+            filtered = filtered.copy()
             filtered['Weight'] = filtered['Weight'].fillna(1)
-            try:
                 weighted_sum = (filtered['Last Sale Amount'] * filtered['Weight']).sum()
                 total_weighted_sqft = (filtered['Living Square Feet'] * filtered['Weight']).sum()
                 avg_price_sqft = weighted_sum / total_weighted_sqft if total_weighted_sqft else None
