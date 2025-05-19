@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file
@@ -38,14 +37,16 @@ def upload():
         comp_file.save(comp_path)
 
         properties_df = pd.read_csv(prop_path)
-        properties_df.columns = properties_df.columns.str.strip()
         comps_df = pd.read_csv(comp_path)
+
+        # Normalize column names
+        properties_df.columns = properties_df.columns.str.strip()
         comps_df.columns = comps_df.columns.str.strip()
 
-        if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
-            return jsonify(success=False, message="Missing 'Id' or 'Listing Price' column.")
+        required_prop_cols = ['Id', 'Listing Price', 'Living Area']
+        required_comp_cols = ['Living Area', 'Sold Price']
 
-        if 'Living Area' not in properties_df.columns or 'Living Area' not in comps_df.columns or 'Sold Price' not in comps_df.columns:
+        if not all(col in properties_df.columns for col in required_prop_cols) or not all(col in comps_df.columns for col in required_comp_cols):
             return jsonify(success=False, message="Missing 'Living Area' or 'Sold Price' in files.")
 
         properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
@@ -58,11 +59,16 @@ def upload():
 
         properties_df['ARV'] = properties_df['Living Area'] * avg_psf
 
-        properties_df['Offer Price'] = properties_df.apply(
-            lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95)
-            if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) else 0,
-            axis=1
-        )
+        def calculate_offer(row):
+            try:
+                if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) and row['ARV'] > 10 and row['Listing Price'] > 10:
+                    return min(row['ARV'] * 0.65, row['Listing Price'] * 0.95)
+                else:
+                    return 0
+            except:
+                return 0
+
+        properties_df['Offer Price'] = properties_df.apply(calculate_offer, axis=1)
 
         properties_df['High Potential'] = properties_df.apply(
             lambda row: row['Offer Price'] <= row['ARV'] * 0.55
@@ -90,7 +96,7 @@ def data():
     global properties_df
     try:
         df = properties_df.copy()
-        for col in ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File']:
+        for col in ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']:
             if col not in df.columns:
                 df[col] = ''
         return df.fillna('').to_json(orient='records')
