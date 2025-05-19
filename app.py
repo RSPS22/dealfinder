@@ -46,7 +46,11 @@ def upload():
             axis=1
         )
 
-        properties_df['High Potential'] = properties_df.apply(lambda row: row['Offer Price'] <= row['ARV'] * 0.55, axis=1)
+        # Apply correct high potential logic
+        properties_df['High Potential'] = properties_df.apply(
+            lambda row: row['Offer Price'] <= row['ARV'] * 0.55 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
+            axis=1
+        )
 
         for i, row in properties_df.iterrows():
             filename = f"LOI_{row['Id']}.docx"
