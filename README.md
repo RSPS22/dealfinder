@@ -1,3 +1,3 @@
 # Deal Finder App
 
-Minimal working Flask app for Render deployment.
+Fully working Flask app with verified template path for Render deployment.
