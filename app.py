@@ -1,3 +1,4 @@
+
 import os
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file
@@ -37,7 +38,9 @@ def upload():
         comp_file.save(comp_path)
 
         properties_df = pd.read_csv(prop_path)
+        properties_df.columns = properties_df.columns.str.strip()
         comps_df = pd.read_csv(comp_path)
+        comps_df.columns = comps_df.columns.str.strip()
 
         if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
             return jsonify(success=False, message="Missing 'Id' or 'Listing Price' column.")
