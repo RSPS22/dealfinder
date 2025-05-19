@@ -51,7 +51,13 @@ def upload():
         properties_df['Offer Price'] = properties_df.apply(
             lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95), axis=1
         )
-        properties_df['High Potential'] = properties_df.apply(lambda row: row['Offer Price'] < row['Listing Price'] * 0.8 if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']) else False, axis=1)
+
+def is_high_potential(row):
+    if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']):
+        return row['Offer Price'] < row['Listing Price'] * 0.8
+    return False
+
+        properties_df['High Potential'] = properties_df.apply(is_high_potential, axis=1)
             lambda row: row['Offer Price'] < row['Listing Price'] * 0.8,
             axis=1
         )
