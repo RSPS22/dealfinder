@@ -35,9 +35,6 @@ def upload():
         prop_file.save(prop_path)
         properties_df = pd.read_csv(prop_path)
 
-        if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
-            return jsonify(success=False, message="Missing 'Id' or 'Listing Price' column.")
-
         properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
         properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
         properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
@@ -49,7 +46,7 @@ def upload():
             axis=1
         )
 
-        properties_df['High Potential'] = properties_df.apply(is_high_potential, axis=1)
+        properties_df['High Potential'] = properties_df.apply(lambda row: row['Offer Price'] <= row['ARV'] * 0.55, axis=1)
 
         for i, row in properties_df.iterrows():
             filename = f"LOI_{row['Id']}.docx"
@@ -65,16 +62,6 @@ def upload():
         print("UPLOAD ERROR:", e)
         traceback.print_exc()
         return jsonify(success=False, message=str(e))
-
-def is_high_potential(row):
-    try:
-        if pd.isnull(row['Offer Price']) or pd.isnull(row['Listing Price']):
-            return False
-        if row['Offer Price'] <= 10 or row['Listing Price'] <= 10:
-            return False
-        return row['Offer Price'] < row['Listing Price'] * 0.8
-    except:
-        return False
 
 @app.route('/data')
 def data():
