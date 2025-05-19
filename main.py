@@ -6,7 +6,6 @@ from datetime import datetime
 from docx import Document
 import smtplib
 from email.message import EmailMessage
-import traceback
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -17,12 +16,10 @@ os.makedirs(app.config['LOI_FOLDER'], exist_ok=True)
 EMAIL_ADDRESS = os.environ.get('EMAIL_ADDRESS')
 EMAIL_PASSWORD = os.environ.get('EMAIL_PASSWORD')
 
-properties_df = pd.DataFrame()
-comps_df = pd.DataFrame()
-
-# [Functions omitted for brevity]
-# Assume all other original functions and routes are here...
-# You can paste your actual main.py contents here if needed
+# Minimal routes for working example
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
