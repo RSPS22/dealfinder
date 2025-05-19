@@ -1,48 +1,421 @@
+<!DOCTYPE html>
 <html>
-  <body>
-    <form id="uploadForm" enctype="multipart/form-data">
-      <input type="file" name="propertyFile" required>
-      <input type="file" name="compsFile" required>
-      <button type="submit">Upload</button>
-    </form>
-    <table id="dataTable"><thead></thead><tbody></tbody></table>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-      const allowedColumns = ['Id', 'Address', 'Condition Override', 'ARV', 'Offer Price', 'High Potential', 'LOI File', 'LOI Sent', 'Follow-Up Sent'];
-      $(document).ready(function () {
-        $('#uploadForm').on('submit', function (e) {
-          e.preventDefault();
-          const formData = new FormData(this);
-          $.ajax({ url: '/upload', method: 'POST', data: formData, processData: false, contentType: false,
-            success: () => fetchData() });
+<head>
+  <title>Deal Finder</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .top-bar { margin-bottom: 20px; }
+    .dashboard-btn {
+      background: #007BFF;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 5px;
+      text-decoration: none;
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    th { background-color: #f2f2f2; cursor: pointer; }
+    .high { background-color: #b2f7b2; }
+    #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; height: 20px; margin-bottom: 10px; }
+    #progressBar { width: 0%; height: 100%; background-color: #4CAF50; transition: width 0.3s; }
+    td.wide-col { max-width: 400px; white-space: normal; }
+    .view-comps-btn { padding: 4px 10px; font-size: 0.9em; background-color: #ddd; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/dashboard" class="dashboard-btn">📊 View Dashboard</a>
+  </div>
+
+  <h2>Upload Properties and Comps</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <label for="businessName">Business Name:</label>
+    <input type="text" name="businessName" required><br><br>
+    <label for="userName">Your Name:</label>
+    <input type="text" name="userName" required><br><br>
+    <label for="userEmail">Your Email:</label>
+    <input type="email" name="userEmail" required><br><br>
+    <label for="propertyFile">Property File:</label>
+    <input type="file" name="propertyFile" id="propertyFile" required><br><br>
+    <label for="compsFile">Comps File:</label>
+    <input type="file" name="compsFile" id="compsFile" required><br><br>
+    <div id="progressBarContainer">
+      <div id="progressBar"></div>
+    </div>
+    <button type="submit">Upload</button>
+    <div id="uploadError" style="color: red;"></div>
+  </form>
+
+  <h2>Results</h2>
+  <table id="dataTable">
+    <thead></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <div id="loadingIndicator" style="display: none;">Loading...</div>
+
+  <script>
+    const allowedColumns = [
+      'Id', 'Address', 'City', 'State', 'Zip',
+      'Subdivision', 'Bedrooms', 'Bathrooms',
+      'Listing Price', 'Days on Market',
+      'Condition Override', 'ARV', 'Offer Price',
+      'High Potential', 'LOI File'
+    ];
+    const currencyColumns = ['Listing Price', 'ARV', 'Offer Price'];
+    let allData = [];
+    let currentSortColumn = null;
+    let sortAsc = true;
+
+    function formatCurrency(val) {
+      return typeof val === 'number'
+        ? val.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })
+        : val || '';
+    }
+
+    function renderTable() {
+      const thead = $('#dataTable thead');
+      const tbody = $('#tableBody');
+      thead.empty();
+      tbody.empty();
+
+      thead.append('<tr>' +
+        allowedColumns.map(h => `<th data-col="${h}">${h}</th>`).join('') +
+        '<th>Override</th><th>Save</th><th>LOI</th></tr>');
+
+      allData.forEach(row => {
+        const tr = $('<tr>').attr('data-id', row['Id']);
+        if (row['High Potential']) tr.addClass('high');
+        allowedColumns.forEach(h => {
+          const value = currencyColumns.includes(h) ? formatCurrency(row[h]) : row[h];
+          tr.append(`<td>${value || ''}</td>`);
         });
-        function fetchData() {
-          $.getJSON('/data', function (data) {
-            const thead = $('#dataTable thead').empty();
-            const tbody = $('#dataTable tbody').empty();
-            thead.append('<tr>' + allowedColumns.map(col => '<th>' + col + '</th>').join('') + '</tr>');
-            data.forEach(row => {
-              const tr = $('<tr>').attr('data-id', row['Id']);
-              allowedColumns.forEach(col => {
-                let val = row[col];
-                if (col === 'LOI Sent' || col === 'Follow-Up Sent') {
-                  val = `<input type="checkbox" class="${col.toLowerCase().replace(/ /g, '-')}" ${row[col] ? 'checked' : ''}>`;
-                }
-                tr.append('<td>' + (val ?? '') + '</td>');
-              });
-              tbody.append(tr);
-            });
+        const override = row['Condition Override'] || 'Medium';
+        tr.append(`<td>
+          <select class="override">
+            <option value="Light"${override === 'Light' ? ' selected' : ''}>Light</option>
+            <option value="Medium"${override === 'Medium' ? ' selected' : ''}>Medium</option>
+            <option value="Heavy"${override === 'Heavy' ? ' selected' : ''}>Heavy</option>
+          </select>
+        </td>`);
+        tr.append(`<td><button class="saveBtn">Save</button></td>`);
+        tr.append(`<td>${row['LOI File'] ? `<a href="/download_loi/${row['LOI File']}" target="_blank">Download</a>` : 'N/A'}</td>`);
+        tbody.append(tr);
+      });
+
+      $('#dataTable thead th').click(function () {
+        const col = $(this).data('col');
+        if (!col) return;
+        if (currentSortColumn === col) sortAsc = !sortAsc;
+        else {
+          currentSortColumn = col;
+          sortAsc = true;
+        }
+        allData.sort((a, b) => {
+          const valA = a[col] || '';
+          const valB = b[col] || '';
+          if (typeof valA === 'number' && typeof valB === 'number') {
+            return sortAsc ? valA - valB : valB - valA;
+          }
+          return sortAsc
+            ? String(valA).localeCompare(String(valB))
+            : String(valB).localeCompare(String(valA));
+        });
+        renderTable();
+      });
+    }
+
+    function fetchData() {
+      $('#loadingIndicator').show();
+      $.getJSON('/data', function (data) {
+        allData = data;
+        if (currentSortColumn) {
+          allData.sort((a, b) => {
+            const valA = a[currentSortColumn] || '';
+            const valB = b[currentSortColumn] || '';
+            if (typeof valA === 'number' && typeof valB === 'number') {
+              return sortAsc ? valA - valB : valB - valA;
+            }
+            return sortAsc
+              ? String(valA).localeCompare(String(valB))
+              : String(valB).localeCompare(String(valA));
           });
         }
-        $(document).on('change', '.loi-sent, .follow-up-sent', function () {
-          const row = $(this).closest('tr');
-          const id = row.data('id');
-          const loiSent = row.find('.loi-sent').is(':checked');
-          const followupSent = row.find('.follow-up-sent').is(':checked');
-          $.ajax({ url: '/update_flags', method: 'POST', contentType: 'application/json',
-            data: JSON.stringify({ id, loiSent, followupSent }) });
+        renderTable();
+        $('#loadingIndicator').hide();
+      }).fail(err => {
+        $('#uploadError').text('Failed to load data.');
+        console.error(err);
+      });
+    }
+
+    $(document).ready(function () {
+      $('#uploadForm').on('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        $.ajax({
+          url: '/upload',
+          method: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false,
+          xhr: function () {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', function (e) {
+              if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                $('#progressBar').css('width', percent + '%');
+              }
+            }, false);
+            return xhr;
+          },
+          beforeSend: function () {
+            $('#progressBar').css('width', '0%');
+            $('#uploadError').text('');
+          },
+          success: function (res) {
+            if (res.success) setTimeout(fetchData, 500);
+            else $('#uploadError').text(res.message || 'Upload failed.');
+          },
+          error: function (xhr, status, error) {
+            $('#uploadError').text('Upload failed: ' + error);
+          }
         });
       });
-    </script>
-  </body>
+
+      $(document).on('click', '.saveBtn', function () {
+        const row = $(this).closest('tr');
+        const id = row.data('id');
+        const override = row.find('.override').val();
+        $.ajax({
+          url: '/save_override',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ id, override }),
+          success: function (res) {
+            if (res.success) setTimeout(fetchData, 500);
+            else alert('Save failed.');
+          }
+        });
+      });
+
+      fetchData();
+    });
+  </script>
+</body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
