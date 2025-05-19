@@ -71,9 +71,15 @@ def upload():
         return jsonify(success=False, message=str(e))
 
 def is_high_potential(row):
-    if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']):
-        return row['Offer Price'] < row['Listing Price'] * 0.8
-    return False
+    try:
+        return (
+            pd.notnull(row['Offer Price']) and
+            pd.notnull(row['Listing Price']) and
+            row['Offer Price'] > 0 and
+            row['Offer Price'] < row['Listing Price'] * 0.8
+        )
+    except:
+        return False
 
 @app.route('/data')
 def data():
