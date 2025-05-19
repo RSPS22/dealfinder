@@ -48,11 +48,11 @@ def upload():
             properties_df['Follow-Up Sent'] = False
 
         properties_df['ARV'] = properties_df['Listing Price'] * 1.1
-
-def is_high_potential(row):
-    if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']):
-        return row['Offer Price'] < row['Listing Price'] * 0.8
-    return False
+        properties_df['Offer Price'] = properties_df.apply(
+            lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95)
+            if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) else 0,
+            axis=1
+        )
 
         properties_df['High Potential'] = properties_df.apply(is_high_potential, axis=1)
 
@@ -65,10 +65,16 @@ def is_high_potential(row):
             properties_df.at[i, 'LOI File'] = filename
 
         return jsonify(success=True)
+
     except Exception as e:
         print("UPLOAD ERROR:", e)
         traceback.print_exc()
         return jsonify(success=False, message=str(e))
+
+def is_high_potential(row):
+    if pd.notnull(row['Offer Price']) and pd.notnull(row['Listing Price']):
+        return row['Offer Price'] < row['Listing Price'] * 0.8
+    return False
 
 @app.route('/data')
 def data():
