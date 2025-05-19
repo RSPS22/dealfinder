@@ -1,3 +1,3 @@
 # Deal Finder App
 
-Fully working Flask app with verified template path for Render deployment.
+This is the full version of the app, ready to deploy to Render.
