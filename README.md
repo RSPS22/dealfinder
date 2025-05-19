@@ -1,3 +1,3 @@
 # Deal Finder App
 
-Minimal working example for deployment on Render.
+Minimal working Flask app for Render deployment.
