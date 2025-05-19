@@ -3,7 +3,6 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from docx import Document
-from datetime import datetime
 import traceback
 
 app = Flask(__name__)
@@ -23,22 +22,21 @@ def index():
 def upload():
     global properties_df, user_info
     try:
+        print("⚙️ Starting file upload...")
         prop_file = request.files.get('propertyFile')
         comp_file = request.files.get('compsFile')
-        user_info['businessName'] = request.form.get('businessName', '')
-        user_info['userName'] = request.form.get('userName', '')
-        user_info['userEmail'] = request.form.get('userEmail', '')
         if not prop_file or not comp_file:
-            print("Missing property or comps file in upload.")
-            return jsonify(success=False, message="Missing files.")
+            print("❌ Missing one or both files")
+            return jsonify(success=False, message="Missing property or comps file")
 
         prop_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(prop_file.filename))
         prop_file.save(prop_path)
         properties_df = pd.read_csv(prop_path)
+        print("✅ Property file loaded. Columns:", list(properties_df.columns))
 
         if 'Id' not in properties_df.columns or 'Listing Price' not in properties_df.columns:
-            print("Missing 'Id' or 'Listing Price' column in uploaded file.")
-            return jsonify(success=False, message="Missing required columns.")
+            print("❌ Missing required columns in uploaded file.")
+            return jsonify(success=False, message="Missing required columns: 'Id' and 'Listing Price'")
 
         if 'Condition Override' not in properties_df.columns:
             properties_df['Condition Override'] = 'Medium'
@@ -64,10 +62,11 @@ def upload():
             doc.save(filepath)
             properties_df.at[i, 'LOI File'] = filename
 
+        print("✅ Upload complete.")
         return jsonify(success=True)
 
     except Exception as e:
-        print("UPLOAD ERROR:", e)
+        print("🚨 UPLOAD ERROR:", e)
         traceback.print_exc()
         return jsonify(success=False, message=str(e))
 
