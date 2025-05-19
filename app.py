@@ -95,7 +95,7 @@ def calculate_arv_and_offer(properties, comps):
             return score
 
         if not filtered.empty:
-            filtered = filtered.copy()
+        filtered = filtered.copy()
             filtered['Weight'] = filtered.apply(score, axis=1)
             filtered['Weight'] = filtered['Weight'].fillna(1)
             try:
@@ -202,6 +202,7 @@ def download_loi(filename):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 
 
