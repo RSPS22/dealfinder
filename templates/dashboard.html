@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Deal Finder Dashboard</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 0; }
+    .card {
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      max-width: 600px;
+    }
+    .log-entry { border-bottom: 1px solid #ccc; padding: 5px 0; }
+    .log-entry:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <h2>📊 Dashboard Overview</h2>
+  <div class="card">
+    <div><strong>Total Properties:</strong> <span id="totalProperties">0</span></div>
+    <div><strong>Emails Sent:</strong> <span id="emailsSent">0</span></div>
+    <div><strong>Follow-Ups Sent:</strong> <span id="followupsSent">0</span></div>
+  </div>
+
+  <h2>Recent Activity Log</h2>
+  <div id="activityLog"></div>
+
+  <script>
+    function loadStats() {
+      $.getJSON('/data', function (data) {
+        $('#totalProperties').text(data.length);
+        let emails = 0;
+        let followups = 0;
+        data.forEach(row => {
+          if (row['Email Sent']) emails++;
+          if (row['Follow-Up Sent']) followups++;
+        });
+        $('#emailsSent').text(emails);
+        $('#followupsSent').text(followups);
+      });
+    }
+
+    function loadActivityLog() {
+      $.getJSON('/activity_log', function (data) {
+        const logDiv = $('#activityLog');
+        logDiv.empty();
+        const recent = data.slice(-10).reverse();
+        recent.forEach(entry => {
+          const line = `<div class="log-entry">[${entry.timestamp}] <strong>${entry.action}</strong> (ID: ${entry.property_id}) — ${entry.details}</div>`;
+          logDiv.append(line);
+        });
+      });
+    }
+
+    $(document).ready(function () {
+      loadStats();
+      loadActivityLog();
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+

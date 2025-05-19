@@ -1,0 +1,14 @@
+Subject: Offer for {{ address }}
+
+Hi {{ agent_name }},
+
+I’m reaching out regarding the property at {{ address }}. After reviewing the condition and local comps, I’d like to make a cash offer of **${{ offer_price }}**.
+
+This is a non-contingent offer with a quick close and minimal inspection period. I'm confident this can be a win-win for both sides.
+
+Please let me know if your seller is open to this price, and I’ll be happy to send over the full purchase contract.
+
+Thanks,  
+{{ your_name }}  
+{{ your_phone }}  
+{{ your_email }}
