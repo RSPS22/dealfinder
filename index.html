@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Deal Finder</title>
+  <title>Deal Finder Upload Test</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-  <form id="uploadForm" enctype="multipart/form-data">
+  <h2>Upload Property + Comps Files</h2>
+  <form id="uploadForm" enctype="multipart/form-data" method="POST">
     <input type="text" name="businessName" placeholder="Business Name" required><br>
     <input type="text" name="userName" placeholder="Your Name" required><br>
     <input type="email" name="userEmail" placeholder="Your Email" required><br>
@@ -14,88 +15,33 @@
     <button type="submit">Upload</button>
   </form>
 
-  <table border="1" id="dataTable">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+  <p id="responseMsg" style="color:red;"></p>
 
-<script>
-$(document).ready(function () {
-  $('#uploadForm').submit(function (e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    $.ajax({
-      url: '/upload',
-      type: 'POST',
-      data: formData,
-      processData: false,
-      contentType: false,
-      success: function () {
-        loadData();
-      }
-    });
-  });
+  <script>
+    $('#uploadForm').submit(function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
 
-  function loadData() {
-    $.getJSON('/data', function (data) {
-      const thead = $('#dataTable thead').empty();
-      const tbody = $('#dataTable tbody').empty();
-
-      if (!data.length) return;
-
-      const keys = Object.keys(data[0]);
-      const headerRow = '<tr>' + keys.map(k => `<th>${k}</th>`).join('') +
-        '<th>LOI Sent</th><th>Follow-Up Sent</th><th>Override</th><th>Save</th><th>LOI</th></tr>';
-      thead.append(headerRow);
-
-      data.forEach(row => {
-        const tr = $('<tr>').attr('data-id', row['Id']);
-        keys.forEach(k => {
-          tr.append(`<td>${row[k]}</td>`);
-        });
-        tr.append(`<td><input type="checkbox" class="loi-sent" ${row['LOI Sent'] ? 'checked' : ''}></td>`);
-        tr.append(`<td><input type="checkbox" class="follow-up-sent" ${row['Follow-Up Sent'] ? 'checked' : ''}></td>`);
-        tr.append(`<td><select class="override">
-          <option value="Light"${row['Condition Override'] === 'Light' ? ' selected' : ''}>Light</option>
-          <option value="Medium"${row['Condition Override'] === 'Medium' ? ' selected' : ''}>Medium</option>
-          <option value="Heavy"${row['Condition Override'] === 'Heavy' ? ' selected' : ''}>Heavy</option>
-        </select></td>`);
-        tr.append('<td><button class="saveBtn">Save</button></td>');
-        tr.append(`<td>${row['LOI File'] ? `<a href="/download_loi/${row['LOI File']}">Download</a>` : ''}</td>`);
-        tbody.append(tr);
+      $.ajax({
+        url: '/upload',
+        type: 'POST',
+        data: formData,
+        contentType: false,
+        processData: false,
+        success: function (res) {
+          if (res.success) {
+            $('#responseMsg').css('color', 'green').text('✅ Upload complete!');
+          } else {
+            $('#responseMsg').css('color', 'red').text('❌ Upload failed: ' + (res.message || 'Unknown error'));
+            console.error("Upload error:", res);
+          }
+        },
+        error: function (xhr, status, err) {
+          $('#responseMsg').css('color', 'red').text('❌ Upload failed: ' + err);
+          console.error("AJAX error:", xhr.responseText);
+        }
       });
     });
-  }
-
-  $(document).on('click', '.saveBtn', function () {
-    const row = $(this).closest('tr');
-    const id = row.data('id');
-    const override = row.find('.override').val();
-    $.ajax({
-      url: '/save_override',
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify({ id, override }),
-      success: loadData
-    });
-  });
-
-  $(document).on('change', '.loi-sent, .follow-up-sent', function () {
-    const row = $(this).closest('tr');
-    const id = row.data('id');
-    const loiSent = row.find('.loi-sent').is(':checked');
-    const followupSent = row.find('.follow-up-sent').is(':checked');
-    $.ajax({
-      url: '/update_flags',
-      method: 'POST',
-      contentType: 'application/json',
-      data: JSON.stringify({ id, loiSent, followupSent }),
-      success: loadData
-    });
-  });
-
-  loadData();
-});
-</script>
+  </script>
 </body>
 </html>
