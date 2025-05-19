@@ -40,11 +40,11 @@ def upload():
         comps_df = pd.read_csv(comp_path)
 
         # Normalize column names
-        properties_df.columns = properties_df.columns.str.strip()
-        comps_df.columns = comps_df.columns.str.strip()
+        properties_df.columns = properties_df.columns.str.strip().str.lower()
+        comps_df.columns = comps_df.columns.str.strip().str.lower()
 
-        required_prop_cols = ['Id', 'Listing Price', 'Living Area']
-        required_comp_cols = ['Living Area', 'Sold Price']
+        required_prop_cols = ['id', 'listing price', 'living area']
+        required_comp_cols = ['living area', 'sold price']
 
         if not all(col in properties_df.columns for col in required_prop_cols) or not all(col in comps_df.columns for col in required_comp_cols):
             return jsonify(success=False, message="Missing 'Living Area' or 'Sold Price' in files.")
