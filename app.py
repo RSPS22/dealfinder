@@ -86,7 +86,15 @@ def data():
     global properties_df
     try:
         df = properties_df.copy()
-        for col in ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']:
+        required_cols = ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']
+        for col in required_cols:
+            if col not in df.columns:
+                if col in ['LOI Sent', 'Follow-Up Sent']:
+                    df[col] = False
+                elif col == 'Condition Override':
+                    df[col] = 'Medium'
+                else:
+                    df[col] = ''
             if col not in df.columns:
                 df[col] = ''
         return df.fillna('').to_json(orient='records')
