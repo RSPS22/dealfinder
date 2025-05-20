@@ -3,7 +3,6 @@ import pandas as pd
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
 from docx import Document
-import traceback
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -12,7 +11,6 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['LOI_FOLDER'], exist_ok=True)
 
 properties_df = pd.DataFrame()
-user_info = {"businessName": "", "userName": "", "userEmail": ""}
 
 @app.route('/')
 def index():
@@ -20,88 +18,59 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    global properties_df, user_info
-    try:
-        prop_file = request.files.get('propertyFile')
-        comp_file = request.files.get('compsFile')
-        user_info['businessName'] = request.form.get('businessName', '')
-        user_info['userName'] = request.form.get('userName', '')
-        user_info['userEmail'] = request.form.get('userEmail', '')
+    global properties_df
+    prop_file = request.files['propertyFile']
+    comp_file = request.files['compsFile']
+    prop_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(prop_file.filename))
+    comp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(comp_file.filename))
+    prop_file.save(prop_path)
+    comp_file.save(comp_path)
 
-        if not prop_file or not comp_file:
-            return jsonify(success=False, message="Missing required files.")
+    properties_df = pd.read_csv(prop_path)
+    comps_df = pd.read_csv(comp_path)
 
-        prop_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(prop_file.filename))
-        comp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(comp_file.filename))
-        prop_file.save(prop_path)
-        comp_file.save(comp_path)
+    comps_df = comps_df[comps_df['Living Square Feet'] > 0]
+    comps_df['$/Sqft'] = comps_df['Last Sale Amount'] / comps_df['Living Square Feet']
+    avg_psf = comps_df['$/Sqft'].mean()
 
-        properties_df = pd.read_csv(prop_path)
-        comps_df = pd.read_csv(comp_path)
+    properties_df['ARV'] = properties_df['Living Square Feet'] * avg_psf
+    properties_df['Offer Price'] = properties_df.apply(
+        lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95) if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) else 0,
+        axis=1
+    )
+    properties_df['High Potential'] = properties_df.apply(
+        lambda row: row['Offer Price'] <= row['ARV'] * 0.6 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
+        axis=1
+    )
 
-        properties_df['Condition Override'] = properties_df.get('Condition Override', 'Medium')
-        properties_df['LOI Sent'] = properties_df.get('LOI Sent', False)
-        properties_df['Follow-Up Sent'] = properties_df.get('Follow-Up Sent', False)
+    properties_df['Condition Override'] = 'Medium'
+    properties_df['LOI Sent'] = False
+    properties_df['Follow-Up Sent'] = False
 
-        comps_df = comps_df[comps_df['Living Square Feet'] > 0]
-        comps_df['$/Sqft'] = comps_df['Last Sale Amount'] / comps_df['Living Square Feet']
-        avg_psf = comps_df['$/Sqft'].mean()
+    for i, row in properties_df.iterrows():
+        filename = f"LOI_{row['Id']}.docx"
+        filepath = os.path.join(app.config['LOI_FOLDER'], filename)
+        doc = Document()
+        doc.add_paragraph(f"LOI for: {row.get('Address', '')}")
+        doc.save(filepath)
+        properties_df.at[i, 'LOI File'] = filename
 
-        properties_df['ARV'] = properties_df['Living Square Feet'] * avg_psf
-
-        def calculate_offer(row):
-            try:
-                if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) and row['ARV'] > 10 and row['Listing Price'] > 10:
-                    return min(row['ARV'] * 0.65, row['Listing Price'] * 0.95)
-                else:
-                    return 0
-            except:
-                return 0
-
-        properties_df['Offer Price'] = properties_df.apply(calculate_offer, axis=1)
-
-        properties_df['High Potential'] = properties_df.apply(
-            lambda row: row['Offer Price'] <= row['ARV'] * 0.60
-            if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
-            axis=1
-        )
-
-        for i, row in properties_df.iterrows():
-            filename = f"LOI_{row['Id']}.docx"
-            filepath = os.path.join(app.config['LOI_FOLDER'], filename)
-            doc = Document()
-            doc.add_paragraph(f"LOI for: {row.get('Address', '')}")
-            doc.save(filepath)
-            properties_df.at[i, 'LOI File'] = filename
-
-        return jsonify(success=True)
-
-    except Exception as e:
-        print("UPLOAD ERROR:", e)
-        traceback.print_exc()
-        return jsonify(success=False, message=str(e))
+    return jsonify(success=True)
 
 @app.route('/data')
 def data():
     global properties_df
-    try:
-        df = properties_df.copy()
-        required_cols = ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']
-        for col in required_cols:
-            if col not in df.columns:
-                if col in ['LOI Sent', 'Follow-Up Sent']:
-                    df[col] = False
-                elif col == 'Condition Override':
-                    df[col] = 'Medium'
-                else:
-                    df[col] = ''
-            if col not in df.columns:
+    df = properties_df.copy()
+    required = ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']
+    for col in required:
+        if col not in df.columns:
+            if col in ['LOI Sent', 'Follow-Up Sent']:
+                df[col] = False
+            elif col == 'Condition Override':
+                df[col] = 'Medium'
+            else:
                 df[col] = ''
-        return df.fillna('').to_json(orient='records')
-    except Exception as e:
-        print("DATA ROUTE ERROR:", e)
-        traceback.print_exc()
-        return jsonify([])
+    return df.to_json(orient='records')
 
 @app.route('/save_override', methods=['POST'])
 def save_override():

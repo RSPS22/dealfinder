@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Deal Finder App</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 6px; }
+        th { background-color: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>✅ Deal Finder App</h2>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <label>Property File: <input type="file" name="propertyFile"></label><br>
+        <label>Comps File: <input type="file" name="compsFile"></label><br>
+        <label>Business Name: <input type="text" name="businessName"></label><br>
+        <label>User Name: <input type="text" name="userName"></label><br>
+        <label>User Email: <input type="email" name="userEmail"></label><br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <hr>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Address</th>
+                <th>Listing Price</th>
+                <th>ARV</th>
+                <th>Offer Price</th>
+                <th>High Potential</th>
+                <th>Condition Override</th>
+                <th>LOI Sent</th>
+                <th>Follow-Up Sent</th>
+                <th>LOI File</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        function loadData() {
+            $.getJSON('/data', function(rows) {
+                const tbody = $('#dataTable tbody').empty();
+                rows.forEach(row => {
+                    const tr = $('<tr>');
+                    tr.append(`<td>${row['Id'] || ''}</td>`);
+                    tr.append(`<td>${row['Address'] || ''}</td>`);
+                    tr.append(`<td>${row['Listing Price'] || ''}</td>`);
+                    tr.append(`<td>${row['ARV'] || ''}</td>`);
+                    tr.append(`<td>${row['Offer Price'] || ''}</td>`);
+                    tr.append(`<td>${row['High Potential'] ? '✅' : ''}</td>`);
+                    tr.append(`<td>
+                        <select class="condition-dropdown" data-id="${row['Id']}">
+                            <option value="Light" ${row['Condition Override'] === 'Light' ? 'selected' : ''}>Light</option>
+                            <option value="Medium" ${row['Condition Override'] === 'Medium' ? 'selected' : ''}>Medium</option>
+                            <option value="Heavy" ${row['Condition Override'] === 'Heavy' ? 'selected' : ''}>Heavy</option>
+                        </select>
+                    </td>`);
+                    tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row['Id']}" ${row['LOI Sent'] ? 'checked' : ''}></td>`);
+                    tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row['Id']}" ${row['Follow-Up Sent'] ? 'checked' : ''}></td>`);
+                    tr.append(`<td>${row['LOI File'] ? `<a href="/download_loi/${row['LOI File']}">Download</a>` : ''}</td>`);
+                    tbody.append(tr);
+                });
+            });
+        }
+
+        $(function () {
+            $('#uploadForm').on('submit', function (e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function () {
+                        loadData();
+                    }
+                });
+            });
+
+            $('#dataTable').on('change', '.condition-dropdown', function () {
+                const id = $(this).data('id');
+                const override = $(this).val();
+                $.post('/save_override', JSON.stringify({ id, override }), {
+                    contentType: 'application/json'
+                }).done(loadData);
+            });
+
+            $('#dataTable').on('change', '.loi-checkbox, .followup-checkbox', function () {
+                const id = $(this).data('id');
+                const loiSent = $(`.loi-checkbox[data-id="${id}"]`).is(':checked');
+                const followupSent = $(`.followup-checkbox[data-id="${id}"]`).is(':checked');
+                $.post('/update_flags', JSON.stringify({ id, loiSent, followupSent }), {
+                    contentType: 'application/json'
+                });
+            });
+
+            loadData();
+        });
+    </script>
+</body>
+</html>
