@@ -43,7 +43,7 @@ def upload():
         axis=1
     )
     properties_df['High Potential'] = properties_df.apply(
-        lambda row: row['Offer Price'] <= row['ARV'] * 0.6 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
+        lambda row: row['Offer Price'] <= row['ARV'] * 0.60 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
         axis=1
     )
 
@@ -65,20 +65,16 @@ def upload():
 def data():
     global properties_df
     df = properties_df.copy()
-    required = [
-        'LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File',
-        'ARV', 'Offer Price', 'High Potential',
+    expected_cols = [
+        'Id', 'Address', 'City', 'State', 'Zip',
+        'Listing Price', 'ARV', 'Offer Price', 'High Potential',
+        'Condition Override', 'LOI Sent', 'Follow-Up Sent', 'LOI File',
         'Agent First Name', 'Agent Last Name', 'Agent Email', 'Agent Phone'
     ]
-    for col in required:
+    for col in expected_cols:
         if col not in df.columns:
-            if col in ['LOI Sent', 'Follow-Up Sent']:
-                df[col] = False
-            elif col == 'Condition Override':
-                df[col] = 'Medium'
-            else:
-                df[col] = ''
-    return df.to_json(orient='records')
+            df[col] = ""
+    return df[expected_cols].to_dict(orient='records')
 
 @app.route('/save_override', methods=['POST'])
 def save_override():
