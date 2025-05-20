@@ -16,6 +16,10 @@ properties_df = pd.DataFrame()
 def index():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/upload', methods=['POST'])
 def upload():
     global properties_df
@@ -61,7 +65,11 @@ def upload():
 def data():
     global properties_df
     df = properties_df.copy()
-    required = ['LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File', 'ARV', 'Offer Price', 'High Potential']
+    required = [
+        'LOI Sent', 'Follow-Up Sent', 'Condition Override', 'LOI File',
+        'ARV', 'Offer Price', 'High Potential',
+        'Agent First Name', 'Agent Last Name', 'Agent Email', 'Agent Phone'
+    ]
     for col in required:
         if col not in df.columns:
             if col in ['LOI Sent', 'Follow-Up Sent']:
