@@ -31,14 +31,21 @@
       <tr>
         <th class="sortable">ID</th>
         <th class="sortable">Address</th>
+        <th class="sortable">City</th>
+        <th class="sortable">State</th>
+        <th class="sortable">Zip</th>
         <th class="sortable">Listing Price</th>
-        <th class="sortable">City</th><th class="sortable">State</th><th class="sortable">Zip</th><th class="sortable">ARV</th>
+        <th class="sortable">ARV</th>
         <th class="sortable">Offer Price</th>
         <th class="sortable">High Potential</th>
         <th>Condition Override</th>
         <th>LOI Sent</th>
         <th>Follow-Up Sent</th>
-        <th>LOI File</th>
+        <th class="sortable">Agent First Name</th>
+        <th class="sortable">Agent Last Name</th>
+        <th class="sortable">Agent Email</th>
+        <th class="sortable">Agent Phone</th>
+        <th class="sortable">LOI File</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -57,18 +64,21 @@
           const tr = $("<tr>");
           tr.append(`<td>${row["Id"] || ""}</td>`);
           tr.append(`<td>${row["Address"] || ""}</td>`);
-          tr.append(`<td>${formatCurrency(row["Listing Price"])}</td>`);
           tr.append(`<td>${row["City"] || ""}</td>`);
           tr.append(`<td>${row["State"] || ""}</td>`);
           tr.append(`<td>${row["Zip"] || ""}</td>`);
+          tr.append(`<td>${formatCurrency(row["Listing Price"])}</td>`);
           tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
           tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
           tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
-          <td><select class="condition-dropdown" data-id="${row["Id"]}">
+          tr.append(`<td>
+            <select class="condition-dropdown" data-id="${row["Id"]}">
               <option value="Light" ${row["Condition Override"] === "Light" ? "selected" : ""}>Light</option>
               <option value="Medium" ${row["Condition Override"] === "Medium" ? "selected" : ""}>Medium</option>
               <option value="Heavy" ${row["Condition Override"] === "Heavy" ? "selected" : ""}>Heavy</option>
-            </select><button class="save-override" data-id="${row["Id"]}">Save</button></td>`);
+            </select>
+            <button class="save-override" data-id="${row["Id"]}">Save</button>
+          </td>`);
           tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row["Id"]}" ${row["LOI Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row["Id"]}" ${row["Follow-Up Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td>${row["Agent First Name"] || ""}</td>`);
@@ -92,8 +102,8 @@
           shouldSwitch = false;
           let x = rows[i].getElementsByTagName("TD")[columnIndex];
           let y = rows[i + 1].getElementsByTagName("TD")[columnIndex];
-          let xContent = isNaN(parseFloat(x.innerHTML.replace(/[$,]/g, ""))) ? x.innerHTML.toLowerCase() : parseFloat(x.innerHTML.replace(/[$,]/g, ""));
-          let yContent = isNaN(parseFloat(y.innerHTML.replace(/[$,]/g, ""))) ? y.innerHTML.toLowerCase() : parseFloat(y.innerHTML.replace(/[$,]/g, ""));
+          let xContent = isNaN(parseFloat(x.innerText.replace(/[$,]/g, ""))) ? x.innerText.toLowerCase() : parseFloat(x.innerText.replace(/[$,]/g, ""));
+          let yContent = isNaN(parseFloat(y.innerText.replace(/[$,]/g, ""))) ? y.innerText.toLowerCase() : parseFloat(y.innerText.replace(/[$,]/g, ""));
           if ((dir === "asc" && xContent > yContent) || (dir === "desc" && xContent < yContent)) {
             shouldSwitch = true;
             break;
@@ -139,13 +149,18 @@
             });
             return xhr;
           },
-          success: loadData,
+          success: function () {
+            loadData();
+          },
+          error: function () {
+            alert("Upload failed. Please try again.");
+          }
         });
       });
 
-      $("#dataTable").on("change", ".condition-dropdown", function () {
+      $("#dataTable").on("click", ".save-override", function () {
         const id = $(this).data("id");
-        const override = $(this).val();
+        const override = $(`.condition-dropdown[data-id="${id}"]`).val();
         $.post("/save_override", JSON.stringify({ id, override }), {
           contentType: "application/json",
         }).done(loadData);
