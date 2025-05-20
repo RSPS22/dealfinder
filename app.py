@@ -54,7 +54,6 @@ def upload():
     properties_df['loi sent'] = False
     properties_df['follow-up sent'] = False
 
-    # Map agent info to expected keys
     rename_map = {
         'listing agent first name': 'agent first name',
         'listing agent last name': 'agent last name',
@@ -65,20 +64,25 @@ def upload():
         if k in properties_df.columns:
             properties_df[v] = properties_df[k]
 
+    # Generate LOI files
     for i, row in properties_df.iterrows():
-        filename = f"LOI_{row['id']}.docx"
+        record_id = row.get('id') or row.get('Id') or f"row_{i}"
+        filename = f"LOI_{record_id}.docx"
         filepath = os.path.join(app.config['LOI_FOLDER'], filename)
-        doc = Document()
-        doc.add_heading("Letter of Intent", level=1)
-        doc.add_paragraph(f"Property: {row.get('address', '')}")
-        doc.add_paragraph(f"Offer Price: ${round(row.get('offer price', 0)):,.0f}")
-        doc.add_paragraph("This offer is subject to standard inspection, review of title, and execution of a purchase agreement.")
-        doc.add_paragraph("Buyer: RSPS LLC")
-        doc.add_paragraph("Contact: Damonn Alston")
-        doc.add_paragraph("Email: damonn.alston@exprealty.com")
-        doc.add_paragraph("Phone: (555) 555-5555")
-        doc.save(filepath)
-        properties_df.at[i, 'loi file'] = filename
+        try:
+            doc = Document()
+            doc.add_heading("Letter of Intent", level=1)
+            doc.add_paragraph(f"Property: {row.get('address', '')}")
+            doc.add_paragraph(f"Offer Price: ${round(row.get('offer price', 0)):,.0f}")
+            doc.add_paragraph("This offer is subject to inspection and contract.")
+            doc.add_paragraph("Buyer: RSPS LLC")
+            doc.add_paragraph("Contact: Damonn Alston")
+            doc.add_paragraph("Email: damonn.alston@exprealty.com")
+            doc.add_paragraph("Phone: (555) 555-5555")
+            doc.save(filepath)
+            properties_df.at[i, 'loi file'] = filename
+        except Exception as e:
+            properties_df.at[i, 'loi file'] = ""
 
     return jsonify(success=True)
 
@@ -127,7 +131,10 @@ def update_flags():
 
 @app.route('/download_loi/<filename>')
 def download_loi(filename):
-    return send_file(os.path.join(app.config['LOI_FOLDER'], filename), as_attachment=True)
+    path = os.path.join(app.config['LOI_FOLDER'], filename)
+    if os.path.exists(path):
+        return send_file(path, as_attachment=True)
+    return "File not found", 404
 
 if __name__ == '__main__':
     app.run(debug=True)
