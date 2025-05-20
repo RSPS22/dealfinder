@@ -64,13 +64,11 @@
           tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
           tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
           tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
-          tr.append(`<td>
-            <select class="condition-dropdown" data-id="${row["Id"]}">
+          <td><select class="condition-dropdown" data-id="${row["Id"]}">
               <option value="Light" ${row["Condition Override"] === "Light" ? "selected" : ""}>Light</option>
               <option value="Medium" ${row["Condition Override"] === "Medium" ? "selected" : ""}>Medium</option>
               <option value="Heavy" ${row["Condition Override"] === "Heavy" ? "selected" : ""}>Heavy</option>
-            </select>
-          </td>`);
+            </select><button class="save-override" data-id="${row["Id"]}">Save</button></td>`);
           tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row["Id"]}" ${row["LOI Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row["Id"]}" ${row["Follow-Up Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td>${row["Agent First Name"] || ""}</td>`);
