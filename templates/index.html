@@ -1,18 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Deal Finder App</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
-    th.sortable:hover { cursor: pointer; background-color: #f2f2f2; }
-    #progressBarContainer { width: 100%; background: #eee; border: 1px solid #ccc; margin-top: 10px; }
-    #progressBar { width: 0%; height: 20px; background: green; color: white; text-align: center; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th.sortable:hover { cursor: pointer; background-color: #f0f0f0; }
+    #progressBarContainer { width: 100%; background: #eee; margin-top: 10px; border: 1px solid #ccc; }
+    #progressBar { width: 0%; height: 20px; background: green; text-align: center; color: white; }
   </style>
 </head>
 <body>
+  <div style="text-align: right; margin-bottom: 10px;">
+    <a href="/dashboard" style="background: #007BFF; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px;">Go to Dashboard</a>
+  </div>
   <h1>Deal Finder</h1>
   <form id="uploadForm" enctype="multipart/form-data">
     <label>Property File: <input type="file" name="propertyFile" /></label><br />
@@ -25,7 +28,6 @@
 
   <div id="progressBarContainer"><div id="progressBar">0%</div></div>
 
-  <br />
   <table id="dataTable">
     <thead>
       <tr>
@@ -52,15 +54,15 @@
   </table>
 
   <script>
-    function formatCurrency(value) {
-      if (!value || isNaN(value)) return '';
-      return "$" + parseFloat(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+    function formatCurrency(val) {
+      if (!val || isNaN(val)) return '';
+      return '$' + parseFloat(val).toLocaleString(undefined, { minimumFractionDigits: 0 });
     }
 
     function loadData() {
       $.getJSON("/data", function (rows) {
         const tbody = $("#dataTable tbody").empty();
-        rows.forEach((row) => {
+        rows.forEach(row => {
           const tr = $("<tr>");
           tr.append(`<td>${row["Id"] || ""}</td>`);
           tr.append(`<td>${row["Address"] || ""}</td>`);
@@ -71,14 +73,16 @@
           tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
           tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
           tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
-          tr.append(`<td>
-            <select class="condition-dropdown" data-id="${row["Id"]}">
-              <option value="Light" ${row["Condition Override"] === "Light" ? "selected" : ""}>Light</option>
-              <option value="Medium" ${row["Condition Override"] === "Medium" ? "selected" : ""}>Medium</option>
-              <option value="Heavy" ${row["Condition Override"] === "Heavy" ? "selected" : ""}>Heavy</option>
-            </select>
-            <button class="save-override" data-id="${row["Id"]}">Save</button>
-          </td>`);
+          tr.append(`
+            <td>
+              <select class="condition-dropdown" data-id="${row["Id"]}">
+                <option value="Light" ${row["Condition Override"] === "Light" ? "selected" : ""}>Light</option>
+                <option value="Medium" ${row["Condition Override"] === "Medium" ? "selected" : ""}>Medium</option>
+                <option value="Heavy" ${row["Condition Override"] === "Heavy" ? "selected" : ""}>Heavy</option>
+              </select>
+              <button class="save-override" data-id="${row["Id"]}">Save</button>
+            </td>
+          `);
           tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row["Id"]}" ${row["LOI Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row["Id"]}" ${row["Follow-Up Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td>${row["Agent First Name"] || ""}</td>`);
@@ -93,18 +97,17 @@
 
     function sortTable(columnIndex) {
       const table = document.getElementById("dataTable");
-      let switching = true, shouldSwitch, i;
-      let dir = "asc", switchcount = 0;
+      let switching = true, dir = "asc", switchcount = 0;
       while (switching) {
         switching = false;
-        let rows = table.rows;
-        for (i = 1; i < (rows.length - 1); i++) {
-          shouldSwitch = false;
+        const rows = table.rows;
+        for (let i = 1; i < rows.length - 1; i++) {
+          let shouldSwitch = false;
           let x = rows[i].getElementsByTagName("TD")[columnIndex];
           let y = rows[i + 1].getElementsByTagName("TD")[columnIndex];
-          let xContent = isNaN(parseFloat(x.innerText.replace(/[$,]/g, ""))) ? x.innerText.toLowerCase() : parseFloat(x.innerText.replace(/[$,]/g, ""));
-          let yContent = isNaN(parseFloat(y.innerText.replace(/[$,]/g, ""))) ? y.innerText.toLowerCase() : parseFloat(y.innerText.replace(/[$,]/g, ""));
-          if ((dir === "asc" && xContent > yContent) || (dir === "desc" && xContent < yContent)) {
+          let xVal = isNaN(parseFloat(x.innerText.replace(/[$,]/g, ""))) ? x.innerText.toLowerCase() : parseFloat(x.innerText.replace(/[$,]/g, ""));
+          let yVal = isNaN(parseFloat(y.innerText.replace(/[$,]/g, ""))) ? y.innerText.toLowerCase() : parseFloat(y.innerText.replace(/[$,]/g, ""));
+          if ((dir === "asc" && xVal > yVal) || (dir === "desc" && xVal < yVal)) {
             shouldSwitch = true;
             break;
           }
@@ -140,7 +143,7 @@
           processData: false,
           contentType: false,
           xhr: function () {
-            let xhr = new window.XMLHttpRequest();
+            let xhr = new XMLHttpRequest();
             xhr.upload.addEventListener("progress", function (e) {
               if (e.lengthComputable) {
                 let percent = Math.round((e.loaded / e.total) * 100);
@@ -153,7 +156,7 @@
             loadData();
           },
           error: function () {
-            alert("Upload failed. Please try again.");
+            alert("Upload failed.");
           }
         });
       });
@@ -162,7 +165,7 @@
         const id = $(this).data("id");
         const override = $(`.condition-dropdown[data-id="${id}"]`).val();
         $.post("/save_override", JSON.stringify({ id, override }), {
-          contentType: "application/json",
+          contentType: "application/json"
         }).done(loadData);
       });
 
@@ -171,7 +174,7 @@
         const loiSent = $(`.loi-checkbox[data-id="${id}"]`).is(":checked");
         const followupSent = $(`.followup-checkbox[data-id="${id}"]`).is(":checked");
         $.post("/update_flags", JSON.stringify({ id, loiSent, followupSent }), {
-          contentType: "application/json",
+          contentType: "application/json"
         });
       });
     });
