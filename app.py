@@ -61,7 +61,7 @@ def upload():
         properties_df['Offer Price'] = properties_df.apply(calculate_offer, axis=1)
 
         properties_df['High Potential'] = properties_df.apply(
-            lambda row: row['Offer Price'] <= row['ARV'] * 0.55
+            lambda row: row['Offer Price'] <= row['ARV'] * 0.60
             if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
             axis=1
         )
