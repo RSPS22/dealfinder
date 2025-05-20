@@ -33,31 +33,52 @@ def upload():
     properties_df = pd.read_csv(prop_path)
     comps_df = pd.read_csv(comp_path)
 
-    comps_df = comps_df[comps_df['Living Square Feet'] > 0]
-    comps_df['$/Sqft'] = comps_df['Last Sale Amount'] / comps_df['Living Square Feet']
-    avg_psf = comps_df['$/Sqft'].mean()
+    properties_df.columns = [col.strip().lower() for col in properties_df.columns]
+    comps_df.columns = [col.strip().lower() for col in comps_df.columns]
 
-    properties_df['ARV'] = properties_df['Living Square Feet'] * avg_psf
-    properties_df['Offer Price'] = properties_df.apply(
-        lambda row: min(row['ARV'] * 0.65, row['Listing Price'] * 0.95) if pd.notnull(row['ARV']) and pd.notnull(row['Listing Price']) else 0,
+    comps_df = comps_df[comps_df['living square feet'] > 0]
+    comps_df['$/sqft'] = comps_df['last sale amount'] / comps_df['living square feet']
+    avg_psf = comps_df['$/sqft'].mean()
+
+    properties_df['arv'] = properties_df['living square feet'] * avg_psf
+    properties_df['offer price'] = properties_df.apply(
+        lambda row: min(row['arv'] * 0.65, row['listing price'] * 0.95) if pd.notnull(row['arv']) and pd.notnull(row['listing price']) else 0,
         axis=1
     )
-    properties_df['High Potential'] = properties_df.apply(
-        lambda row: row['Offer Price'] <= row['ARV'] * 0.60 if pd.notnull(row['Offer Price']) and pd.notnull(row['ARV']) else False,
+    properties_df['high potential'] = properties_df.apply(
+        lambda row: row['offer price'] <= row['arv'] * 0.60 if pd.notnull(row['offer price']) and pd.notnull(row['arv']) else False,
         axis=1
     )
 
-    properties_df['Condition Override'] = 'Medium'
-    properties_df['LOI Sent'] = False
-    properties_df['Follow-Up Sent'] = False
+    properties_df['condition override'] = 'Medium'
+    properties_df['loi sent'] = False
+    properties_df['follow-up sent'] = False
+
+    # Map agent info to expected keys
+    rename_map = {
+        'listing agent first name': 'agent first name',
+        'listing agent last name': 'agent last name',
+        'listing agent email': 'agent email',
+        'listing agent phone': 'agent phone'
+    }
+    for k, v in rename_map.items():
+        if k in properties_df.columns:
+            properties_df[v] = properties_df[k]
 
     for i, row in properties_df.iterrows():
-        filename = f"LOI_{row['Id']}.docx"
+        filename = f"LOI_{row['id']}.docx"
         filepath = os.path.join(app.config['LOI_FOLDER'], filename)
         doc = Document()
-        doc.add_paragraph(f"LOI for: {row.get('Address', '')}")
+        doc.add_heading("Letter of Intent", level=1)
+        doc.add_paragraph(f"Property: {row.get('address', '')}")
+        doc.add_paragraph(f"Offer Price: ${round(row.get('offer price', 0)):,.0f}")
+        doc.add_paragraph("This offer is subject to standard inspection, review of title, and execution of a purchase agreement.")
+        doc.add_paragraph("Buyer: RSPS LLC")
+        doc.add_paragraph("Contact: Damonn Alston")
+        doc.add_paragraph("Email: damonn.alston@exprealty.com")
+        doc.add_paragraph("Phone: (555) 555-5555")
         doc.save(filepath)
-        properties_df.at[i, 'LOI File'] = filename
+        properties_df.at[i, 'loi file'] = filename
 
     return jsonify(success=True)
 
@@ -66,15 +87,15 @@ def data():
     global properties_df
     df = properties_df.copy()
     expected_cols = [
-        'Id', 'Address', 'City', 'State', 'Zip',
-        'Listing Price', 'ARV', 'Offer Price', 'High Potential',
-        'Condition Override', 'LOI Sent', 'Follow-Up Sent', 'LOI File',
-        'Agent First Name', 'Agent Last Name', 'Agent Email', 'Agent Phone'
+        'id', 'address', 'city', 'state', 'zip', 'listing price',
+        'arv', 'offer price', 'high potential', 'condition override',
+        'loi sent', 'follow-up sent', 'loi file',
+        'agent first name', 'agent last name', 'agent email', 'agent phone'
     ]
     for col in expected_cols:
         if col not in df.columns:
             df[col] = ""
-    return df[expected_cols].to_dict(orient='records')
+    return df[expected_cols].rename(columns=lambda x: x.title()).to_dict(orient='records')
 
 @app.route('/save_override', methods=['POST'])
 def save_override():
@@ -82,10 +103,10 @@ def save_override():
     data = request.json
     row_id = data['id']
     override = data['override']
-    idx = properties_df[properties_df['Id'] == row_id].index
+    idx = properties_df[properties_df['id'] == row_id].index
     if not idx.empty:
         i = idx[0]
-        properties_df.at[i, 'Condition Override'] = override
+        properties_df.at[i, 'condition override'] = override
         return jsonify(success=True)
     return jsonify(success=False)
 
@@ -96,11 +117,11 @@ def update_flags():
     row_id = data['id']
     loi_sent = data['loiSent']
     followup_sent = data['followupSent']
-    idx = properties_df[properties_df['Id'] == row_id].index
+    idx = properties_df[properties_df['id'] == row_id].index
     if not idx.empty:
         i = idx[0]
-        properties_df.at[i, 'LOI Sent'] = loi_sent
-        properties_df.at[i, 'Follow-Up Sent'] = followup_sent
+        properties_df.at[i, 'loi sent'] = loi_sent
+        properties_df.at[i, 'follow-up sent'] = followup_sent
         return jsonify(success=True)
     return jsonify(success=False)
 
