@@ -36,11 +36,36 @@ def upload():
     properties_df.columns = [col.strip().lower() for col in properties_df.columns]
     comps_df.columns = [col.strip().lower() for col in comps_df.columns]
 
-    comps_df = comps_df[comps_df['living square feet'] > 0]
-    comps_df['$/sqft'] = comps_df['last sale amount'] / comps_df['living square feet']
+    # Normalize agent fields
+    rename_map = {
+        'listing agent first name': 'agent first name',
+        'listing agent last name': 'agent last name',
+        'listing agent email': 'agent email',
+        'listing agent phone': 'agent phone'
+    }
+    for k, v in rename_map.items():
+        if k in properties_df.columns:
+            properties_df[v] = properties_df[k]
+
+    # Get correct comp columns
+    sqft_col = 'living square feet' if 'living square feet' in comps_df.columns else 'living area'
+    price_col = 'last sale amount' if 'last sale amount' in comps_df.columns else 'sold price'
+
+    if sqft_col not in comps_df.columns or price_col not in comps_df.columns:
+        return "Missing 'Living Area' or 'Sold Price' in comps file.", 400
+
+    comps_df = comps_df[comps_df[sqft_col] > 0]
+    comps_df['$/sqft'] = comps_df[price_col] / comps_df[sqft_col]
     avg_psf = comps_df['$/sqft'].mean()
 
-    properties_df['arv'] = properties_df['living square feet'] * avg_psf
+    # Calculate ARV and Offer Price
+    if 'living square feet' in properties_df.columns:
+        properties_df['arv'] = properties_df['living square feet'] * avg_psf
+    elif 'living area' in properties_df.columns:
+        properties_df['arv'] = properties_df['living area'] * avg_psf
+    else:
+        properties_df['arv'] = 0
+
     properties_df['offer price'] = properties_df.apply(
         lambda row: min(row['arv'] * 0.65, row['listing price'] * 0.95) if pd.notnull(row['arv']) and pd.notnull(row['listing price']) else 0,
         axis=1
@@ -54,20 +79,11 @@ def upload():
     properties_df['loi sent'] = False
     properties_df['follow-up sent'] = False
 
-    rename_map = {
-        'listing agent first name': 'agent first name',
-        'listing agent last name': 'agent last name',
-        'listing agent email': 'agent email',
-        'listing agent phone': 'agent phone'
-    }
-    for k, v in rename_map.items():
-        if k in properties_df.columns:
-            properties_df[v] = properties_df[k]
-
-    # Generate LOI files
+    # Generate LOIs
+    loi_files = []
     for i, row in properties_df.iterrows():
-        record_id = row.get('id') or row.get('Id') or f"row_{i}"
-        filename = f"LOI_{record_id}.docx"
+        row_id = str(row.get('id') or f"row_{i}")
+        filename = f"LOI_{row_id}.docx"
         filepath = os.path.join(app.config['LOI_FOLDER'], filename)
         try:
             doc = Document()
