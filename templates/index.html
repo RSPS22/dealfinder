@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <title>Deal Finder App</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+    th.sortable:hover { cursor: pointer; background-color: #f2f2f2; }
+    #progressBarContainer { width: 100%; background: #eee; border: 1px solid #ccc; margin-top: 10px; }
+    #progressBar { width: 0%; height: 20px; background: green; color: white; text-align: center; }
+  </style>
 </head>
 <body>
   <h1>Deal Finder</h1>
@@ -16,16 +23,18 @@
     <button type="submit">Upload</button>
   </form>
 
+  <div id="progressBarContainer"><div id="progressBar">0%</div></div>
+
   <br />
-  <table id="dataTable" border="1">
+  <table id="dataTable">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Address</th>
-        <th>Listing Price</th>
-        <th>ARV</th>
-        <th>Offer Price</th>
-        <th>High Potential</th>
+        <th class="sortable">ID</th>
+        <th class="sortable">Address</th>
+        <th class="sortable">Listing Price</th>
+        <th class="sortable">ARV</th>
+        <th class="sortable">Offer Price</th>
+        <th class="sortable">High Potential</th>
         <th>Condition Override</th>
         <th>LOI Sent</th>
         <th>Follow-Up Sent</th>
@@ -36,6 +45,11 @@
   </table>
 
   <script>
+    function formatCurrency(value) {
+      if (!value || isNaN(value)) return '';
+      return "$" + parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 0 });
+    }
+
     function loadData() {
       $.getJSON("/data", function (rows) {
         const tbody = $("#dataTable tbody").empty();
@@ -43,9 +57,9 @@
           const tr = $("<tr>");
           tr.append(`<td>${row["Id"] || ""}</td>`);
           tr.append(`<td>${row["Address"] || ""}</td>`);
-          tr.append(`<td>${row["Listing Price"] || ""}</td>`);
-          tr.append(`<td>${row["ARV"] || ""}</td>`);
-          tr.append(`<td>${row["Offer Price"] || ""}</td>`);
+          tr.append(`<td>${formatCurrency(row["Listing Price"])}</td>`);
+          tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
+          tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
           tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
           tr.append(`<td>
             <select class="condition-dropdown" data-id="${row["Id"]}">
@@ -62,18 +76,64 @@
       });
     }
 
+    function sortTable(columnIndex) {
+      const table = document.getElementById("dataTable");
+      let switching = true, shouldSwitch, i;
+      let dir = "asc", switchcount = 0;
+      while (switching) {
+        switching = false;
+        let rows = table.rows;
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          let x = rows[i].getElementsByTagName("TD")[columnIndex];
+          let y = rows[i + 1].getElementsByTagName("TD")[columnIndex];
+          let xContent = isNaN(parseFloat(x.innerHTML.replace(/[$,]/g, ""))) ? x.innerHTML.toLowerCase() : parseFloat(x.innerHTML.replace(/[$,]/g, ""));
+          let yContent = isNaN(parseFloat(y.innerHTML.replace(/[$,]/g, ""))) ? y.innerHTML.toLowerCase() : parseFloat(y.innerHTML.replace(/[$,]/g, ""));
+          if ((dir === "asc" && xContent > yContent) || (dir === "desc" && xContent < yContent)) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+          switchcount++;
+        } else {
+          if (switchcount === 0 && dir === "asc") {
+            dir = "desc";
+            switching = true;
+          }
+        }
+      }
+    }
+
     $(function () {
       loadData();
+
+      $(".sortable").click(function () {
+        sortTable($(this).index());
+      });
 
       $("#uploadForm").on("submit", function (e) {
         e.preventDefault();
         const formData = new FormData(this);
+        $("#progressBar").css("width", "0%").text("0%");
         $.ajax({
           url: "/upload",
           type: "POST",
           data: formData,
           processData: false,
           contentType: false,
+          xhr: function () {
+            let xhr = new window.XMLHttpRequest();
+            xhr.upload.addEventListener("progress", function (e) {
+              if (e.lengthComputable) {
+                let percent = Math.round((e.loaded / e.total) * 100);
+                $("#progressBar").css("width", percent + "%").text(percent + "%");
+              }
+            });
+            return xhr;
+          },
           success: loadData,
         });
       });
