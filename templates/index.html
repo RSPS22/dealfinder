@@ -32,7 +32,7 @@
         <th class="sortable">ID</th>
         <th class="sortable">Address</th>
         <th class="sortable">Listing Price</th>
-        <th class="sortable">ARV</th>
+        <th class="sortable">City</th><th class="sortable">State</th><th class="sortable">Zip</th><th class="sortable">ARV</th>
         <th class="sortable">Offer Price</th>
         <th class="sortable">High Potential</th>
         <th>Condition Override</th>
@@ -47,7 +47,7 @@
   <script>
     function formatCurrency(value) {
       if (!value || isNaN(value)) return '';
-      return "$" + parseFloat(value).toLocaleString(undefined, { minimumFractionDigits: 0 });
+      return "$" + parseFloat(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
     }
 
     function loadData() {
@@ -58,6 +58,9 @@
           tr.append(`<td>${row["Id"] || ""}</td>`);
           tr.append(`<td>${row["Address"] || ""}</td>`);
           tr.append(`<td>${formatCurrency(row["Listing Price"])}</td>`);
+          tr.append(`<td>${row["City"] || ""}</td>`);
+          tr.append(`<td>${row["State"] || ""}</td>`);
+          tr.append(`<td>${row["Zip"] || ""}</td>`);
           tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
           tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
           tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
@@ -70,6 +73,10 @@
           </td>`);
           tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row["Id"]}" ${row["LOI Sent"] ? "checked" : ""}></td>`);
           tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row["Id"]}" ${row["Follow-Up Sent"] ? "checked" : ""}></td>`);
+          tr.append(`<td>${row["Agent First Name"] || ""}</td>`);
+          tr.append(`<td>${row["Agent Last Name"] || ""}</td>`);
+          tr.append(`<td>${row["Agent Email"] || ""}</td>`);
+          tr.append(`<td>${row["Agent Phone"] || ""}</td>`);
           tr.append(`<td>${row["LOI File"] ? `<a href="/download_loi/${row["LOI File"]}">Download</a>` : ""}</td>`);
           tbody.append(tr);
         });
