@@ -83,6 +83,8 @@ def upload():
         prop_df['LOI Sent'] = False
         prop_df['Follow-Up Sent'] = False
 
+        prop_df['ARV'] = prop_df['ARV'].apply(lambda x: f"${x:,.0f}")
+        prop_df['Offer Price'] = prop_df['Offer Price'].apply(lambda x: f"${x:,.0f}")
         properties_df = prop_df
 
         return jsonify({'success': True})
