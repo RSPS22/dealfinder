@@ -46,14 +46,14 @@
                 });
 
                 document.getElementById('progress').value = 80;
-                const result = await response.json();
+                const result = await response.text();
 
-                if (result.success) {
-                    document.getElementById('progress').value = 100;
-                    document.getElementById('status').innerText = 'Upload successful! Reloading...';
-                    setTimeout(() => location.reload(), 1500);
+                if (response.ok) {
+                    document.open();
+                    document.write(result);
+                    document.close();
                 } else {
-                    document.getElementById('status').innerText = 'Error: ' + (result.error || 'Upload failed');
+                    document.getElementById('status').innerText = 'Error: ' + result;
                     document.getElementById('progress').style.display = 'none';
                 }
             } catch (err) {

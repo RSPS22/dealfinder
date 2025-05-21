@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Deal Dashboard</title>
+    <title>Dashboard</title>
     <style>
         body { font-family: Arial; margin: 30px; }
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
@@ -11,9 +11,9 @@
     </style>
 </head>
 <body>
-    <h2>Dashboard</h2>
+    <h2>Deal Dashboard</h2>
     {% if properties %}
-    <table id="deal-table">
+    <table>
         <thead>
             <tr>
                 {% for key in properties[0].keys() %}
@@ -22,25 +22,25 @@
             </tr>
         </thead>
         <tbody>
-        {% for row in properties %}
-            <tr class="{{ 'green' if row['High Potential'] else '' }}">
-                {% for val in row.values() %}
-                    <td>
-                        {% if val is sameas true %}
-                            <input type="checkbox" checked disabled>
-                        {% elif val is sameas false %}
-                            <input type="checkbox" disabled>
-                        {% else %}
-                            {{ val }}
-                        {% endif %}
-                    </td>
-                {% endfor %}
-            </tr>
-        {% endfor %}
+            {% for row in properties %}
+                <tr class="{{ 'green' if row['High Potential'] else '' }}">
+                    {% for key, val in row.items() %}
+                        <td>
+                            {% if val is sameas true %}
+                                <input type="checkbox" checked disabled>
+                            {% elif val is sameas false %}
+                                <input type="checkbox" disabled>
+                            {% else %}
+                                {{ val }}
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p>No data available.</p>
+    <p>No properties available.</p>
     {% endif %}
 </body>
 </html>
