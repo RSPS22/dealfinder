@@ -47,6 +47,7 @@ def upload():
 
         prop_df['ARV'] = prop_df['ARV'].apply(lambda x: f"${x:,.0f}")
         prop_df['Offer Price'] = prop_df['Offer Price'].apply(lambda x: f"${x:,.0f}")
+        prop_df['Listing Price'] = prop_df['Listing Price'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A")
 
         properties_df = prop_df
         properties = properties_df.to_dict(orient='records')
@@ -54,3 +55,6 @@ def upload():
         return render_template('dashboard.html', properties=properties, business_name=business_name, user_name=user_name, user_email=user_email)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
