@@ -18,13 +18,22 @@ def index():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    global properties_df
+    total_props = len(properties_df)
+    loi_sent_count = properties_df['loi sent'].sum() if 'loi sent' in properties_df else 0
+    high_potential_count = properties_df['high potential'].sum() if 'high potential' in properties_df else 0
+    avg_offer = round(properties_df['offer price'].mean(), 2) if 'offer price' in properties_df and not properties_df.empty else 0
+    return render_template('dashboard.html', total=total_props, loi_count=loi_sent_count, high_count=high_potential_count, avg_offer=avg_offer)
 
 @app.route('/upload', methods=['POST'])
 def upload():
     global properties_df
     prop_file = request.files['propertyFile']
     comp_file = request.files['compsFile']
+    business_name = request.form.get('businessName', '').strip()
+    user_name = request.form.get('userName', '').strip()
+    user_email = request.form.get('userEmail', '').strip()
+
     prop_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(prop_file.filename))
     comp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(comp_file.filename))
     prop_file.save(prop_path)
@@ -36,7 +45,6 @@ def upload():
     properties_df.columns = [col.strip().lower() for col in properties_df.columns]
     comps_df.columns = [col.strip().lower() for col in comps_df.columns]
 
-    # Normalize agent fields
     rename_map = {
         'listing agent first name': 'agent first name',
         'listing agent last name': 'agent last name',
@@ -47,29 +55,27 @@ def upload():
         if k in properties_df.columns:
             properties_df[v] = properties_df[k]
 
-    # Get correct comp columns
-    sqft_col = 'living square feet' if 'living square feet' in comps_df.columns else 'living area'
-    price_col = 'last sale amount' if 'last sale amount' in comps_df.columns else 'sold price'
+    sqft_col = next((col for col in comps_df.columns if 'living' in col and 'sqft' in col), None)
+    price_col = next((col for col in comps_df.columns if 'sale' in col or 'sold' in col), None)
 
-    if sqft_col not in comps_df.columns or price_col not in comps_df.columns:
-        return "Missing 'Living Area' or 'Sold Price' in comps file.", 400
+    if not sqft_col or not price_col:
+        return "Missing required columns in comps file.", 400
 
     comps_df = comps_df[comps_df[sqft_col] > 0]
     comps_df['$/sqft'] = comps_df[price_col] / comps_df[sqft_col]
     avg_psf = comps_df['$/sqft'].mean()
 
-    # Calculate ARV and Offer Price
-    if 'living square feet' in properties_df.columns:
-        properties_df['arv'] = properties_df['living square feet'] * avg_psf
-    elif 'living area' in properties_df.columns:
-        properties_df['arv'] = properties_df['living area'] * avg_psf
-    else:
+    prop_sqft_col = next((col for col in properties_df.columns if 'living' in col and 'sqft' in col), None)
+    if not prop_sqft_col:
         properties_df['arv'] = 0
+    else:
+        properties_df['arv'] = properties_df[prop_sqft_col] * avg_psf
 
     properties_df['offer price'] = properties_df.apply(
         lambda row: min(row['arv'] * 0.65, row['listing price'] * 0.95) if pd.notnull(row['arv']) and pd.notnull(row['listing price']) else 0,
         axis=1
     )
+
     properties_df['high potential'] = properties_df.apply(
         lambda row: row['offer price'] <= row['arv'] * 0.60 if pd.notnull(row['offer price']) and pd.notnull(row['arv']) else False,
         axis=1
@@ -79,8 +85,6 @@ def upload():
     properties_df['loi sent'] = False
     properties_df['follow-up sent'] = False
 
-    # Generate LOIs
-    loi_files = []
     for i, row in properties_df.iterrows():
         row_id = str(row.get('id') or f"row_{i}")
         filename = f"LOI_{row_id}.docx"
@@ -91,13 +95,13 @@ def upload():
             doc.add_paragraph(f"Property: {row.get('address', '')}")
             doc.add_paragraph(f"Offer Price: ${round(row.get('offer price', 0)):,.0f}")
             doc.add_paragraph("This offer is subject to inspection and contract.")
-            doc.add_paragraph("Buyer: RSPS LLC")
-            doc.add_paragraph("Contact: Damonn Alston")
-            doc.add_paragraph("Email: damonn.alston@exprealty.com")
+            doc.add_paragraph(f"Buyer: {business_name or '[Business Name]'}")
+            doc.add_paragraph(f"Contact: {user_name or '[Your Name]'}")
+            doc.add_paragraph(f"Email: {user_email or '[Your Email]'}")
             doc.add_paragraph("Phone: (555) 555-5555")
             doc.save(filepath)
             properties_df.at[i, 'loi file'] = filename
-        except Exception as e:
+        except:
             properties_df.at[i, 'loi file'] = ""
 
     return jsonify(success=True)
