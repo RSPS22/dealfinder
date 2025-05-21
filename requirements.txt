@@ -1,5 +1,4 @@
-flask
-pandas
-jinja2
-python-docx
-gunicorn
+Flask==2.3.2
+gunicorn==21.2.0
+pandas==2.1.0
+openpyxl==3.1.2
