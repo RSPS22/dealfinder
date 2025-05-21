@@ -5,7 +5,7 @@
     <style>
         body { font-family: Arial; margin: 30px; }
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { padding: 8px 10px; border: 1px solid #ccc; text-align: left; }
+        th, td { padding: 8px 10px; border: 1px solid #ccc; text-align: left; white-space: nowrap; }
         th { background-color: #f2f2f2; cursor: pointer; }
         .green { background-color: #d4edda; }
     </style>
@@ -16,25 +16,49 @@
     <table>
         <thead>
             <tr>
-                {% for key in properties[0].keys() %}
-                    <th>{{ key }}</th>
-                {% endfor %}
+                <th>Id</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>State</th>
+                <th>Zip</th>
+                <th>Bedrooms</th>
+                <th>Bathrooms</th>
+                <th>Listing Price</th>
+                <th>ARV</th>
+                <th>Offer Price</th>
+                <th>Condition Estimate</th>
+                <th>Condition Override</th>
+                <th>High Potential</th>
+                <th>LOI Sent</th>
+                <th>Follow-Up Sent</th>
+                <th>Listing Agent First Name</th>
+                <th>Listing Agent Last Name</th>
+                <th>Listing Agent Email</th>
+                <th>Listing Agent Phone</th>
             </tr>
         </thead>
         <tbody>
             {% for row in properties %}
                 <tr class="{{ 'green' if row['High Potential'] else '' }}">
-                    {% for key, val in row.items() %}
-                        <td>
-                            {% if val is sameas true %}
-                                <input type="checkbox" checked disabled>
-                            {% elif val is sameas false %}
-                                <input type="checkbox" disabled>
-                            {% else %}
-                                {{ val }}
-                            {% endif %}
-                        </td>
-                    {% endfor %}
+                    <td>{{ row['Id'] }}</td>
+                    <td>{{ row['Address'] }}</td>
+                    <td>{{ row['City'] }}</td>
+                    <td>{{ row['State'] }}</td>
+                    <td>{{ row['Zip'] }}</td>
+                    <td>{{ row['Bedrooms'] }}</td>
+                    <td>{{ row['Bathrooms'] }}</td>
+                    <td>{{ row['Listing Price'] }}</td>
+                    <td>{{ row['ARV'] }}</td>
+                    <td>{{ row['Offer Price'] }}</td>
+                    <td>{{ row['Condition Estimate'] }}</td>
+                    <td>{{ row['Condition Override'] }}</td>
+                    <td><input type="checkbox" {% if row['High Potential'] %}checked{% endif %} disabled></td>
+                    <td><input type="checkbox" {% if row['LOI Sent'] %}checked{% endif %} disabled></td>
+                    <td><input type="checkbox" {% if row['Follow-Up Sent'] %}checked{% endif %} disabled></td>
+                    <td>{{ row['Listing Agent First Name'] }}</td>
+                    <td>{{ row['Listing Agent Last Name'] }}</td>
+                    <td>{{ row['Listing Agent Email'] }}</td>
+                    <td>{{ row['Listing Agent Phone'] }}</td>
                 </tr>
             {% endfor %}
         </tbody>
