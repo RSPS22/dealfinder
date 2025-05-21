@@ -70,7 +70,9 @@ def upload():
         return "Missing required columns in comps file.", 400
 
     comps_df = comps_df[comps_df[sqft_col] > 0]
-    comps_df['$/sqft'] = comps_df[price_col] / comps_df[sqft_col]
+    comps_df['_clean_price'] = pd.to_numeric(comps_df[price_col].astype(str).str.replace(',', ''), errors='coerce')
+    comps_df['_clean_sqft'] = pd.to_numeric(comps_df[sqft_col].astype(str).str.replace(',', ''), errors='coerce')
+    comps_df['$/sqft'] = comps_df['_clean_price'] / comps_df['_clean_sqft']
     avg_psf = comps_df['$/sqft'].mean()
 
     prop_sqft_col = next((col for col in comps_df.columns if 'living' in col.lower() and ('sqft' in col.lower() or 'square feet' in col.lower())), None)
