@@ -161,7 +161,7 @@
             const userName = document.getElementById('userName').value;
             const userEmail = document.getElementById('userEmail').value;
 
-            if (!propFile || !compsFile) return alert("Please upload both files.");
+            if (!propFile || !compsFile) return 
             formData.append('propertyFile', propFile);
             formData.append('compsFile', compsFile);
             formData.append('businessName', businessName);
@@ -169,32 +169,59 @@
             formData.append('userEmail', userEmail);
 
             console.log("Upload started...");
-            alert("Uploading... Please wait.");
+            
             console.log("Upload started...");
-            alert("Uploading... Please wait.");
+            
             fetch('/upload', { method: 'POST', body: formData })
                 .then(res => res.text())
                 .then(responseText => {
                     try {
                         const json = JSON.parse(responseText);
                         if (json.success) {
-                            alert("Upload successful!");
+                            
                             loadData();
                         } else {
-                            alert("Upload failed. Please check your files.");
+                            
                         }
                     } catch (err) {
-                        alert("Upload failed. Server response: " + responseText);
+                        
                         console.error("Upload response error:", responseText);
                     }
                 })
                 .catch(err => {
-                    alert("Upload failed: " + err.message);
+                    
                     console.error("Network or server error:", err);
                 });
         };
 
         loadData();
     </script>
+
+    <script>
+    function handleUpload(e) {
+        e.preventDefault();
+        const form = document.getElementById("upload-form");
+        const formData = new FormData(form);
+        const progressBar = document.getElementById("progressBar");
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload", true);
+        xhr.upload.onprogress = function(event) {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                progressBar.value = percentComplete;
+            }
+        };
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                progressBar.value = 100;
+                location.reload(); // refresh to load table
+            } else {
+                console.error("Upload failed.");
+            }
+        };
+        xhr.send(formData);
+    }
+    </script>
+    
 </body>
 </html>
