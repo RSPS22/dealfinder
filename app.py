@@ -114,7 +114,7 @@ def upload():
         except:
             properties_df.at[i, 'loi file'] = ""
 
-    return jsonify(success=True)
+    return redirect("/")
 
 @app.route('/data')
 def data():
@@ -141,7 +141,7 @@ def save_override():
     if not idx.empty:
         i = idx[0]
         properties_df.at[i, 'condition override'] = override
-        return jsonify(success=True)
+        return redirect("/")
     return jsonify(success=False)
 
 @app.route('/update_flags', methods=['POST'])
@@ -156,7 +156,7 @@ def update_flags():
         i = idx[0]
         properties_df.at[i, 'loi sent'] = loi_sent
         properties_df.at[i, 'follow-up sent'] = followup_sent
-        return jsonify(success=True)
+        return redirect("/")
     return jsonify(success=False)
 
 @app.route('/download_loi/<filename>')
