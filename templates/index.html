@@ -8,6 +8,7 @@
         th, td { padding: 8px 10px; border: 1px solid #ccc; text-align: left; }
         th { background: #f2f2f2; cursor: pointer; }
         .green { background-color: #d4edda; }
+        .button { padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -26,8 +27,11 @@
         <button type="submit">Upload</button>
     </form>
 
-    <progress id="progress" value="0" max="100" style="display:none;"></progress>
+    <progress id="progress" value="0" max="100" style="display:none; width: 100%;"></progress>
     <div id="status" style="margin-top:20px;"></div>
+    <div id="dashboard-link" style="display:none;">
+        <a href="/dashboard" class="button">View Dashboard</a>
+    </div>
 
     <script>
         document.getElementById('upload-form').onsubmit = async function(e) {
