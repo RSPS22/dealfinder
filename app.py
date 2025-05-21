@@ -38,7 +38,11 @@ def upload():
         if 'Listing Price' not in prop_df.columns or 'Living Square Feet' not in prop_df.columns:
             return jsonify({'error': 'Missing required columns in property file.'}), 400
         price_col = next((c for c in comps_df.columns if 'sold' in c.lower() and 'price' in c.lower()), None)
+        if not price_col and 'Last Sale Amount' in comps_df.columns:
+            price_col = 'Last Sale Amount'
         sqft_col = next((c for c in comps_df.columns if 'living' in c.lower() or 'sqft' in c.lower()), None)
+        if not sqft_col and 'Living Square Feet' in comps_df.columns:
+            sqft_col = 'Living Square Feet'
         if not price_col or not sqft_col:
             return jsonify({'error': 'Missing required columns in comps file.'}), 400
 
