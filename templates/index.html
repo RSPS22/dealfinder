@@ -161,20 +161,22 @@
 
             console.log("Upload started...");
             alert("Uploading... Please wait.");
+            console.log("Upload started...");
+            alert("Uploading... Please wait.");
             fetch('/upload', { method: 'POST', body: formData })
-                .then(async res => {
+                .then(res => res.text())
+                .then(responseText => {
                     try {
-                        const json = await res.json();
+                        const json = JSON.parse(responseText);
                         if (json.success) {
                             alert("Upload successful!");
                             loadData();
                         } else {
-                            alert("Upload failed. Please check the file format.");
+                            alert("Upload failed. Please check your files.");
                         }
-                    } catch (e) {
-                        const text = await res.text();
-                        alert("Upload failed. Server said: " + text);
-                        console.error("Upload error:", text);
+                    } catch (err) {
+                        alert("Upload failed. Server response: " + responseText);
+                        console.error("Upload response error:", responseText);
                     }
                 })
                 .catch(err => {
