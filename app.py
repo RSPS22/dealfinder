@@ -16,14 +16,22 @@ properties_df = pd.DataFrame()
 def index():
     return render_template('index.html')
 
+
 @app.route('/dashboard')
 def dashboard():
     global properties_df
-    total_props = len(properties_df)
-    loi_sent_count = properties_df['loi sent'].sum() if 'loi sent' in properties_df else 0
-    high_potential_count = properties_df['high potential'].sum() if 'high potential' in properties_df else 0
-    avg_offer = round(properties_df['offer price'].mean(), 2) if 'offer price' in properties_df and not properties_df.empty else 0
+    if 'properties_df' not in globals() or properties_df.empty:
+        total_props = 0
+        loi_sent_count = 0
+        high_potential_count = 0
+        avg_offer = 0
+    else:
+        total_props = len(properties_df)
+        loi_sent_count = properties_df['loi sent'].sum() if 'loi sent' in properties_df else 0
+        high_potential_count = properties_df['high potential'].sum() if 'high potential' in properties_df else 0
+        avg_offer = round(properties_df['offer price'].mean(), 2) if 'offer price' in properties_df else 0
     return render_template('dashboard.html', total=total_props, loi_count=loi_sent_count, high_count=high_potential_count, avg_offer=avg_offer)
+
 
 @app.route('/upload', methods=['POST'])
 def upload():
