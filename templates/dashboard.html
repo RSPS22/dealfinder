@@ -1,25 +1,46 @@
 <!DOCTYPE html>
 <html>
-<head><title>Dashboard</title></head>
+<head>
+    <title>Deal Dashboard</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { padding: 8px 10px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #f2f2f2; cursor: pointer; }
+        .green { background-color: #d4edda; }
+    </style>
+</head>
 <body>
-<h2>Property Dashboard</h2>
-{% if properties %}
-<table border="1">
-<tr>
-    {% for key in properties[0].keys() %}
-        <th>{{ key }}</th>
-    {% endfor %}
-</tr>
-{% for row in properties %}
-<tr>
-    {% for val in row.values() %}
-        <td>{{ val }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}
-</table>
-{% else %}
-<p>No data uploaded yet.</p>
-{% endif %}
+    <h2>Dashboard</h2>
+    {% if properties %}
+    <table id="deal-table">
+        <thead>
+            <tr>
+                {% for key in properties[0].keys() %}
+                    <th>{{ key }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in properties %}
+            <tr class="{{ 'green' if row['High Potential'] else '' }}">
+                {% for val in row.values() %}
+                    <td>
+                        {% if val is sameas true %}
+                            <input type="checkbox" checked disabled>
+                        {% elif val is sameas false %}
+                            <input type="checkbox" disabled>
+                        {% else %}
+                            {{ val }}
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No data available.</p>
+    {% endif %}
 </body>
 </html>

@@ -1,14 +1,66 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Deal Finder</title>
+    <title>Deal Finder App</title>
+    <style>
+        body { font-family: Arial; margin: 30px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { padding: 8px 10px; border: 1px solid #ccc; text-align: left; }
+        th { background: #f2f2f2; cursor: pointer; }
+        .green { background-color: #d4edda; }
+    </style>
 </head>
 <body>
-    <h2>Deal Finder Upload</h2>
-    <form id="upload-form" method="post" enctype="multipart/form-data" action="/upload">
-        <label>Property CSV:</label><input type="file" name="propertyFile" required><br><br>
-        <label>Comps CSV:</label><input type="file" name="compsFile" required><br><br>
+    <h2>Deal Finder App</h2>
+    <form id="upload-form" method="post" enctype="multipart/form-data">
+        <label>Property File:</label>
+        <input type="file" name="propertyFile" required><br><br>
+        <label>Comps File:</label>
+        <input type="file" name="compsFile" required><br><br>
+        <label>Business Name:</label>
+        <input type="text" name="businessName"><br><br>
+        <label>Your Name:</label>
+        <input type="text" name="userName"><br><br>
+        <label>Email:</label>
+        <input type="email" name="userEmail"><br><br>
         <button type="submit">Upload</button>
     </form>
+
+    <progress id="progress" value="0" max="100" style="display:none;"></progress>
+    <div id="status" style="margin-top:20px;"></div>
+
+    <script>
+        document.getElementById('upload-form').onsubmit = async function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('progress').value = 25;
+            document.getElementById('status').innerText = 'Uploading...';
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                document.getElementById('progress').value = 80;
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('progress').value = 100;
+                    document.getElementById('status').innerText = 'Upload successful! Reloading...';
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    document.getElementById('status').innerText = 'Error: ' + (result.error || 'Upload failed');
+                    document.getElementById('progress').style.display = 'none';
+                }
+            } catch (err) {
+                document.getElementById('status').innerText = 'Error: ' + err.message;
+                document.getElementById('progress').style.display = 'none';
+            }
+        };
+    </script>
 </body>
 </html>
