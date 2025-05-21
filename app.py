@@ -56,7 +56,7 @@ def upload():
             properties_df[v] = properties_df[k]
 
     sqft_col = next((col for col in comps_df.columns if 'living' in col and 'sqft' in col), None)
-    price_col = next((col for col in comps_df.columns if 'sale' in col or 'sold' in col), None)
+    price_col = next((col for col in comps_df.columns if 'sale' in col or 'sold' in col or 'last sale amount' in col.lower()), None)
 
     if not sqft_col or not price_col:
         return "Missing required columns in comps file.", 400
