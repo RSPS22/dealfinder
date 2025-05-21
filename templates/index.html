@@ -1,227 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Deal Finder App</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th.sortable:hover { cursor: pointer; background-color: #f0f0f0; }
-        .btn { padding: 6px 12px; margin: 4px; }
-        .highlight { background-color: #c8f7c5; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; }
-        .input-group { margin-bottom: 10px; }
+        table {
+            font-size: 14px;
+        }
+        th {
+            cursor: pointer;
+        }
+        .high-potential {
+            background-color: #d4edda !important;
+        }
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 2;
+        }
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 1;
+        }
+        .sticky-col + .sticky-col {
+            left: 120px;
+        }
     </style>
 </head>
-<body>
-    <div class="top-bar">
-        <h1>✅ Deal Finder App</h1>
-        <a href="/dashboard"><button class="btn">Go to Dashboard</button></a>
-    </div>
+<body class="p-4">
+    <h2 class="mb-4">✅ Deal Finder App</h2>
+    <form id="upload-form" method="post" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="propertyFile" class="form-label">Property File (.csv)</label>
+            <input type="file" class="form-control" id="propertyFile" name="propertyFile" accept=".csv" required>
+        </div>
+        <div class="mb-3">
+            <label for="compsFile" class="form-label">Comps File (.csv)</label>
+            <input type="file" class="form-control" id="compsFile" name="compsFile" accept=".csv" required>
+        </div>
+        <div class="mb-3">
+            <label for="businessName" class="form-label">Your Business Name</label>
+            <input type="text" class="form-control" id="businessName" name="businessName" placeholder="Optional">
+        </div>
+        <div class="mb-3">
+            <label for="userName" class="form-label">Your Name</label>
+            <input type="text" class="form-control" id="userName" name="userName" placeholder="Optional">
+        </div>
+        <div class="mb-3">
+            <label for="userEmail" class="form-label">Your Email</label>
+            <input type="email" class="form-control" id="userEmail" name="userEmail" placeholder="Optional">
+        </div>
+        <progress id="progressBar" value="0" max="100" style="width:100%; display: none;"></progress><br>
+        <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
 
-    <div class="input-group">
-        <label>Business Name: <input type="text" id="businessName"></label>
-        <label>Your Name: <input type="text" id="userName"></label>
-        <label>Your Email: <input type="email" id="userEmail"></label>
-    </div>
-
-    <label>📂 Property File:<br><input type="file" id="propertyFile"></label><br><br>
-    <label>📂 Comps File:<br><input type="file" id="compsFile"></label><br><br>
-    <button id="uploadBtn" class="btn">Upload</button>
-
-    <table id="dataTable">
-        <thead></thead>
-        <tbody></tbody>
-    </table>
-
-    <script>
-    const progressBar = document.getElementById("progressBar");
-    const xhr = new XMLHttpRequest();
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-            const percent = (e.loaded / e.total) * 100;
-            progressBar.value = percent;
-        }
-    };
-    
-        let data = [];
-        let currentSort = { column: null, ascending: true };
-
-        function formatCurrency(val) {
-            if (isNaN(val)) return val;
-            return "$" + parseFloat(val).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }
-
-        function renderTable() {
-            const table = document.getElementById('dataTable');
-            const thead = table.querySelector('thead');
-            const tbody = table.querySelector('tbody');
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
-
-            if (data.length === 0) return;
-
-            const headers = Object.keys(data[0]);
-            const headerRow = document.createElement('tr');
-            headers.forEach((header, index) => {
-                const th = document.createElement('th');
-                th.textContent = header;
-                th.classList.add('sortable');
-                th.onclick = () => sortTable(index);
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                if (row["High Potential"] === true || row["High Potential"] === "True") {
-                    tr.classList.add('highlight');
-                }
-
-                headers.forEach(header => {
-                    const td = document.createElement('td');
-                    if (header === 'Offer Price' || header === 'ARV' || header === 'Listing Price') {
-                        td.textContent = formatCurrency(row[header]);
-                    } else if (header === 'Loi File') {
-                        td.innerHTML = row[header] ? `<a href="/download_loi/${row[header]}" target="_blank">Download</a>` : 'N/A';
-                    } else if (header === 'Condition Override') {
-                        td.innerHTML = `
-                            <select onchange="saveOverride('${row['Id']}', this.value)">
-                                <option ${row[header] === 'Light' ? 'selected' : ''}>Light</option>
-                                <option ${row[header] === 'Medium' ? 'selected' : ''}>Medium</option>
-                                <option ${row[header] === 'Heavy' ? 'selected' : ''}>Heavy</option>
-                            </select>
-                        `;
-                    } else if (header === 'Loi Sent' || header === 'Follow-Up Sent') {
-                        const flag = header === 'Loi Sent' ? 'loiSent' : 'followupSent';
-                        td.innerHTML = `
-                            <input type="checkbox" onchange="updateFlags('${row['Id']}', '${flag}', this.checked)" ${row[header] ? 'checked' : ''}>
-                        `;
-                    } else {
-                        td.textContent = row[header];
-                    }
-                    tr.appendChild(td);
-                });
-
-                tbody.appendChild(tr);
-            });
-        }
-
-        function sortTable(index) {
-            const key = Object.keys(data[0])[index];
-            const asc = currentSort.column === key ? !currentSort.ascending : true;
-            currentSort = { column: key, ascending: asc };
-            data.sort((a, b) => {
-                let valA = a[key], valB = b[key];
-                if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
-                    valA = parseFloat(valA);
-                    valB = parseFloat(valB);
-                }
-                if (valA < valB) return asc ? -1 : 1;
-                if (valA > valB) return asc ? 1 : -1;
-                return 0;
-            });
-            renderTable();
-        }
-
-        function saveOverride(id, value) {
-            fetch('/save_override', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id, override: value })
-            }).then(() => loadData());
-        }
-
-        function updateFlags(id, flag, state) {
-            fetch('/update_flags', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: id,
-                    loiSent: flag === 'loiSent' ? state : undefined,
-                    followupSent: flag === 'followupSent' ? state : undefined
-                })
-            }).then(() => loadData());
-        }
-
-        function loadData() {
-            fetch('/data')
-                .then(res => res.json())
-                .then(json => {
-                    data = json;
-                    renderTable();
-                });
-        }
-
-        document.getElementById('uploadBtn').onclick = () => {
-            const formData = new FormData();
-            const propFile = document.getElementById('propertyFile').files[0];
-            const compsFile = document.getElementById('compsFile').files[0];
-            const businessName = document.getElementById('businessName').value;
-            const userName = document.getElementById('userName').value;
-            const userEmail = document.getElementById('userEmail').value;
-
-            if (!propFile || !compsFile) return 
-            formData.append('propertyFile', propFile);
-            formData.append('compsFile', compsFile);
-            formData.append('businessName', businessName);
-            formData.append('userName', userName);
-            formData.append('userEmail', userEmail);
-
-            console.log("Upload started...");
-            
-            console.log("Upload started...");
-            
-            fetch('/upload', { method: 'POST', body: formData })
-                .then(res => res.text())
-                .then(responseText => {
-                    try {
-                        const json = JSON.parse(responseText);
-                        if (json.success) {
-                            
-                            loadData();
-                        } else {
-                            
-                        }
-                    } catch (err) {
-                        
-                        console.error("Upload response error:", responseText);
-                    }
-                })
-                .catch(err => {
-                    
-                    console.error("Network or server error:", err);
-                });
-        };
-
-        loadData();
-    </script>
+    <div id="table-container" class="mt-4"></div>
 
     <script>
-    function handleUpload(e) {
-        e.preventDefault();
-        const form = document.getElementById("upload-form");
-        const formData = new FormData(form);
-        const progressBar = document.getElementById("progressBar");
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/upload", true);
-        xhr.upload.onprogress = function(event) {
-            if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                progressBar.value = percentComplete;
-            }
-        };
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                progressBar.value = 100;
-                location.reload(); // refresh to load table
-            } else {
-                console.error("Upload failed.");
-            }
-        };
-        xhr.send(formData);
-    }
+        document.getElementById("upload-form").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const progressBar = document.getElementById("progressBar");
+            progressBar.style.display = "block";
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/upload", true);
+            xhr.upload.onprogress = function(event) {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    progressBar.value = percentComplete;
+                }
+            };
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    progressBar.value = 100;
+                    location.reload(); // refresh to show table
+                } else {
+                    console.error("Upload failed.");
+                }
+            };
+            xhr.send(formData);
+        });
     </script>
-    
 </body>
 </html>
