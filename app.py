@@ -55,7 +55,7 @@ def upload():
         if k in properties_df.columns:
             properties_df[v] = properties_df[k]
 
-    sqft_col = next((col for col in comps_df.columns if 'living' in col.lower() and 'sqft' in col.lower()), None)
+    sqft_col = next((col for col in comps_df.columns if 'living' in col.lower() and ('sqft' in col.lower() or 'square feet' in col.lower())), None)
     price_col = next((col for col in comps_df.columns if any(key in col.lower() for key in ['sale', 'sold', 'last sale amount'])), None)
 
     if not sqft_col or not price_col:
@@ -65,7 +65,7 @@ def upload():
     comps_df['$/sqft'] = comps_df[price_col] / comps_df[sqft_col]
     avg_psf = comps_df['$/sqft'].mean()
 
-    prop_sqft_col = next((col for col in comps_df.columns if 'living' in col.lower() and 'sqft' in col.lower()), None)
+    prop_sqft_col = next((col for col in comps_df.columns if 'living' in col.lower() and ('sqft' in col.lower() or 'square feet' in col.lower())), None)
     if not prop_sqft_col:
         properties_df['arv'] = 0
     else:
