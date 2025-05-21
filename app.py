@@ -37,12 +37,14 @@ def upload():
 
         if 'Listing Price' not in prop_df.columns or 'Living Square Feet' not in prop_df.columns:
             return jsonify({'error': 'Missing required columns in property file.'}), 400
-        if 'Sold Price' not in comps_df.columns or 'Living Area' not in comps_df.columns:
+        price_col = next((c for c in comps_df.columns if 'sold' in c.lower() and 'price' in c.lower()), None)
+        sqft_col = next((c for c in comps_df.columns if 'living' in c.lower() or 'sqft' in c.lower()), None)
+        if not price_col or not sqft_col:
             return jsonify({'error': 'Missing required columns in comps file.'}), 400
 
-        comps_df['Sold Price'] = comps_df['Sold Price'].replace('[\$,]', '', regex=True).astype(float)
-        comps_df['Living Area'] = comps_df['Living Area'].replace('[\$,]', '', regex=True).astype(float)
-        comps_df['$/sqft'] = comps_df['Sold Price'] / comps_df['Living Area']
+        comps_df[price_col] = comps_df[price_col].replace('[\$,]', '', regex=True).astype(float)
+        comps_df[sqft_col] = comps_df[sqft_col].replace('[\$,]', '', regex=True).astype(float)
+        comps_df['$/sqft'] = comps_df[price_col] / comps_df[sqft_col]
         avg_price_per_sqft = comps_df['$/sqft'].mean()
 
         prop_df['Living Square Feet'] = prop_df['Living Square Feet'].replace('[\$,]', '', regex=True).astype(float)
