@@ -1,9 +1,12 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, redirect, url_for
 import pandas as pd
 import os
 from docx import Document
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+dashboard_data = []
 
 @app.route('/')
 def index():
@@ -11,6 +14,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    global dashboard_data
     try:
         prop_file = request.files['propertyFile']
         comps_file = request.files['compsFile']
@@ -30,7 +34,7 @@ def upload():
             sqft_col = 'Living Square Feet'
 
         if not price_col or not sqft_col:
-            return jsonify({'error': 'Missing required columns in comps file.'}), 400
+            return "Missing required columns in comps file.", 400
 
         comps_df[price_col] = comps_df[price_col].replace('[\$,]', '', regex=True).astype(float)
         comps_df[sqft_col] = comps_df[sqft_col].replace('[\$,]', '', regex=True).astype(float)
@@ -47,14 +51,17 @@ def upload():
 
         prop_df['ARV'] = prop_df['ARV'].apply(lambda x: f"${x:,.0f}")
         prop_df['Offer Price'] = prop_df['Offer Price'].apply(lambda x: f"${x:,.0f}")
-        prop_df['Listing Price'] = prop_df['Listing Price'].apply(lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A")
+        prop_df['Listing Price'] = prop_df['Listing Price'].replace('[\$,]', '', regex=True).astype(float).apply(lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A")
 
-        properties_df = prop_df
-        properties = properties_df.to_dict(orient='records')
+        dashboard_data = prop_df.to_dict(orient='records')
+        return redirect(url_for('dashboard'))
 
-        return render_template('dashboard.html', properties=properties, business_name=business_name, user_name=user_name, user_email=user_email)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return f"Upload failed: {e}", 500
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html', properties=dashboard_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
