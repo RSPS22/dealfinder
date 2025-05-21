@@ -1,183 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Deal Finder App</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <style>
-    table { border-collapse: collapse; width: 100%; font-size: 14px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th.sortable:hover { cursor: pointer; background-color: #f0f0f0; }
-    #progressBarContainer { width: 100%; background: #eee; margin-top: 10px; border: 1px solid #ccc; }
-    #progressBar { width: 0%; height: 20px; background: green; text-align: center; color: white; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Deal Finder App</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th.sortable:hover { cursor: pointer; background-color: #f0f0f0; }
+        .btn { padding: 6px 12px; margin: 4px; }
+        .highlight { background-color: #c8f7c5; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+        .input-group { margin-bottom: 10px; }
+    </style>
 </head>
 <body>
-  <div style="text-align: right; margin-bottom: 10px;">
-    <a href="/dashboard" style="background: #007BFF; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px;">Go to Dashboard</a>
-  </div>
-  <h1>Deal Finder</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <label>Property File: <input type="file" name="propertyFile" /></label><br />
-    <label>Comps File: <input type="file" name="compsFile" /></label><br />
-    <label>Business Name: <input type="text" name="businessName" /></label><br />
-    <label>User Name: <input type="text" name="userName" /></label><br />
-    <label>User Email: <input type="email" name="userEmail" /></label><br />
-    <button type="submit">Upload</button>
-  </form>
+    <div class="top-bar">
+        <h1>✅ Deal Finder App</h1>
+        <a href="/dashboard"><button class="btn">Go to Dashboard</button></a>
+    </div>
 
-  <div id="progressBarContainer"><div id="progressBar">0%</div></div>
+    <div class="input-group">
+        <label>Business Name: <input type="text" id="businessName"></label>
+        <label>Your Name: <input type="text" id="userName"></label>
+        <label>Your Email: <input type="email" id="userEmail"></label>
+    </div>
 
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th class="sortable">ID</th>
-        <th class="sortable">Address</th>
-        <th class="sortable">City</th>
-        <th class="sortable">State</th>
-        <th class="sortable">Zip</th>
-        <th class="sortable">Listing Price</th>
-        <th class="sortable">ARV</th>
-        <th class="sortable">Offer Price</th>
-        <th class="sortable">High Potential</th>
-        <th>Condition Override</th>
-        <th>LOI Sent</th>
-        <th>Follow-Up Sent</th>
-        <th class="sortable">Agent First Name</th>
-        <th class="sortable">Agent Last Name</th>
-        <th class="sortable">Agent Email</th>
-        <th class="sortable">Agent Phone</th>
-        <th class="sortable">LOI File</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <input type="file" id="propertyFile">
+    <input type="file" id="compsFile">
+    <button id="uploadBtn" class="btn">Upload</button>
 
-  <script>
-    function formatCurrency(val) {
-      if (!val || isNaN(val)) return '';
-      return '$' + parseFloat(val).toLocaleString(undefined, { minimumFractionDigits: 0 });
-    }
+    <table id="dataTable">
+        <thead></thead>
+        <tbody></tbody>
+    </table>
 
-    function loadData() {
-      $.getJSON("/data", function (rows) {
-        const tbody = $("#dataTable tbody").empty();
-        rows.forEach(row => {
-          const tr = $("<tr>");
-          tr.append(`<td>${row["Id"] || ""}</td>`);
-          tr.append(`<td>${row["Address"] || ""}</td>`);
-          tr.append(`<td>${row["City"] || ""}</td>`);
-          tr.append(`<td>${row["State"] || ""}</td>`);
-          tr.append(`<td>${row["Zip"] || ""}</td>`);
-          tr.append(`<td>${formatCurrency(row["Listing Price"])}</td>`);
-          tr.append(`<td>${formatCurrency(row["ARV"])}</td>`);
-          tr.append(`<td>${formatCurrency(row["Offer Price"])}</td>`);
-          tr.append(`<td>${row["High Potential"] ? "✅" : ""}</td>`);
-          tr.append(`
-            <td>
-              <select class="condition-dropdown" data-id="${row["Id"]}">
-                <option value="Light" ${row["Condition Override"] === "Light" ? "selected" : ""}>Light</option>
-                <option value="Medium" ${row["Condition Override"] === "Medium" ? "selected" : ""}>Medium</option>
-                <option value="Heavy" ${row["Condition Override"] === "Heavy" ? "selected" : ""}>Heavy</option>
-              </select>
-              <button class="save-override" data-id="${row["Id"]}">Save</button>
-            </td>
-          `);
-          tr.append(`<td><input type="checkbox" class="loi-checkbox" data-id="${row["Id"]}" ${row["LOI Sent"] ? "checked" : ""}></td>`);
-          tr.append(`<td><input type="checkbox" class="followup-checkbox" data-id="${row["Id"]}" ${row["Follow-Up Sent"] ? "checked" : ""}></td>`);
-          tr.append(`<td>${row["Agent First Name"] || ""}</td>`);
-          tr.append(`<td>${row["Agent Last Name"] || ""}</td>`);
-          tr.append(`<td>${row["Agent Email"] || ""}</td>`);
-          tr.append(`<td>${row["Agent Phone"] || ""}</td>`);
-          tr.append(`<td>${row["LOI File"] ? `<a href="/download_loi/${row["LOI File"]}">Download</a>` : ""}</td>`);
-          tbody.append(tr);
-        });
-      });
-    }
+    <script>
+        let data = [];
+        let currentSort = { column: null, ascending: true };
 
-    function sortTable(columnIndex) {
-      const table = document.getElementById("dataTable");
-      let switching = true, dir = "asc", switchcount = 0;
-      while (switching) {
-        switching = false;
-        const rows = table.rows;
-        for (let i = 1; i < rows.length - 1; i++) {
-          let shouldSwitch = false;
-          let x = rows[i].getElementsByTagName("TD")[columnIndex];
-          let y = rows[i + 1].getElementsByTagName("TD")[columnIndex];
-          let xVal = isNaN(parseFloat(x.innerText.replace(/[$,]/g, ""))) ? x.innerText.toLowerCase() : parseFloat(x.innerText.replace(/[$,]/g, ""));
-          let yVal = isNaN(parseFloat(y.innerText.replace(/[$,]/g, ""))) ? y.innerText.toLowerCase() : parseFloat(y.innerText.replace(/[$,]/g, ""));
-          if ((dir === "asc" && xVal > yVal) || (dir === "desc" && xVal < yVal)) {
-            shouldSwitch = true;
-            break;
-          }
+        function formatCurrency(val) {
+            if (isNaN(val)) return val;
+            return "$" + parseFloat(val).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
-        if (shouldSwitch) {
-          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-          switching = true;
-          switchcount++;
-        } else {
-          if (switchcount === 0 && dir === "asc") {
-            dir = "desc";
-            switching = true;
-          }
-        }
-      }
-    }
 
-    $(function () {
-      loadData();
+        function renderTable() {
+            const table = document.getElementById('dataTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
 
-      $(".sortable").click(function () {
-        sortTable($(this).index());
-      });
+            if (data.length === 0) return;
 
-      $("#uploadForm").on("submit", function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        $("#progressBar").css("width", "0%").text("0%");
-        $.ajax({
-          url: "/upload",
-          type: "POST",
-          data: formData,
-          processData: false,
-          contentType: false,
-          xhr: function () {
-            let xhr = new XMLHttpRequest();
-            xhr.upload.addEventListener("progress", function (e) {
-              if (e.lengthComputable) {
-                let percent = Math.round((e.loaded / e.total) * 100);
-                $("#progressBar").css("width", percent + "%").text(percent + "%");
-              }
+            const headers = Object.keys(data[0]);
+            const headerRow = document.createElement('tr');
+            headers.forEach((header, index) => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                th.classList.add('sortable');
+                th.onclick = () => sortTable(index);
+                headerRow.appendChild(th);
             });
-            return xhr;
-          },
-          success: function () {
-            loadData();
-          },
-          error: function () {
-            alert("Upload failed.");
-          }
-        });
-      });
+            thead.appendChild(headerRow);
 
-      $("#dataTable").on("click", ".save-override", function () {
-        const id = $(this).data("id");
-        const override = $(`.condition-dropdown[data-id="${id}"]`).val();
-        $.post("/save_override", JSON.stringify({ id, override }), {
-          contentType: "application/json"
-        }).done(loadData);
-      });
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                if (row["High Potential"] === true || row["High Potential"] === "True") {
+                    tr.classList.add('highlight');
+                }
 
-      $("#dataTable").on("change", ".loi-checkbox, .followup-checkbox", function () {
-        const id = $(this).data("id");
-        const loiSent = $(`.loi-checkbox[data-id="${id}"]`).is(":checked");
-        const followupSent = $(`.followup-checkbox[data-id="${id}"]`).is(":checked");
-        $.post("/update_flags", JSON.stringify({ id, loiSent, followupSent }), {
-          contentType: "application/json"
-        });
-      });
-    });
-  </script>
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    if (header === 'Offer Price' || header === 'ARV' || header === 'Listing Price') {
+                        td.textContent = formatCurrency(row[header]);
+                    } else if (header === 'Loi File') {
+                        td.innerHTML = row[header] ? `<a href="/download_loi/${row[header]}" target="_blank">Download</a>` : 'N/A';
+                    } else if (header === 'Condition Override') {
+                        td.innerHTML = `
+                            <select onchange="saveOverride('${row['Id']}', this.value)">
+                                <option ${row[header] === 'Light' ? 'selected' : ''}>Light</option>
+                                <option ${row[header] === 'Medium' ? 'selected' : ''}>Medium</option>
+                                <option ${row[header] === 'Heavy' ? 'selected' : ''}>Heavy</option>
+                            </select>
+                        `;
+                    } else if (header === 'Loi Sent' || header === 'Follow-Up Sent') {
+                        const flag = header === 'Loi Sent' ? 'loiSent' : 'followupSent';
+                        td.innerHTML = `
+                            <input type="checkbox" onchange="updateFlags('${row['Id']}', '${flag}', this.checked)" ${row[header] ? 'checked' : ''}>
+                        `;
+                    } else {
+                        td.textContent = row[header];
+                    }
+                    tr.appendChild(td);
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(index) {
+            const key = Object.keys(data[0])[index];
+            const asc = currentSort.column === key ? !currentSort.ascending : true;
+            currentSort = { column: key, ascending: asc };
+            data.sort((a, b) => {
+                let valA = a[key], valB = b[key];
+                if (!isNaN(parseFloat(valA)) && !isNaN(parseFloat(valB))) {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+                if (valA < valB) return asc ? -1 : 1;
+                if (valA > valB) return asc ? 1 : -1;
+                return 0;
+            });
+            renderTable();
+        }
+
+        function saveOverride(id, value) {
+            fetch('/save_override', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, override: value })
+            }).then(() => loadData());
+        }
+
+        function updateFlags(id, flag, state) {
+            fetch('/update_flags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: id,
+                    loiSent: flag === 'loiSent' ? state : undefined,
+                    followupSent: flag === 'followupSent' ? state : undefined
+                })
+            }).then(() => loadData());
+        }
+
+        function loadData() {
+            fetch('/data')
+                .then(res => res.json())
+                .then(json => {
+                    data = json;
+                    renderTable();
+                });
+        }
+
+        document.getElementById('uploadBtn').onclick = () => {
+            const formData = new FormData();
+            const propFile = document.getElementById('propertyFile').files[0];
+            const compsFile = document.getElementById('compsFile').files[0];
+            const businessName = document.getElementById('businessName').value;
+            const userName = document.getElementById('userName').value;
+            const userEmail = document.getElementById('userEmail').value;
+
+            if (!propFile || !compsFile) return alert("Please upload both files.");
+            formData.append('propertyFile', propFile);
+            formData.append('compsFile', compsFile);
+            formData.append('businessName', businessName);
+            formData.append('userName', userName);
+            formData.append('userEmail', userEmail);
+
+            fetch('/upload', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(json => {
+                    if (json.success) loadData();
+                    else alert("Upload failed.");
+                });
+        };
+
+        loadData();
+    </script>
 </body>
 </html>

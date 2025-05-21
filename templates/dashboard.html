@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Deal Finder Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h1 { color: #333; }
-    p { margin-top: 10px; }
-    .back-link { margin-top: 20px; display: inline-block; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Dashboard Overview</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        h1 { margin-bottom: 20px; }
+        .stat-box { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 8px; width: 300px; }
+    </style>
 </head>
 <body>
-  <h1>Dashboard</h1>
-  <p>This is the Deal Finder dashboard placeholder page.</p>
-  <p>You can customize this view later to show stats, saved deals, or reports.</p>
-  <a href="/" class="back-link">← Back to Main App</a>
+    <h1>📊 Deal Finder Dashboard</h1>
+    <div class="stat-box">Total Properties: <strong>{{ total }}</strong></div>
+    <div class="stat-box">LOIs Sent: <strong>{{ loi_count }}</strong></div>
+    <div class="stat-box">High Potential Leads: <strong>{{ high_count }}</strong></div>
+    <div class="stat-box">Average Offer Price: <strong>${{ avg_offer }}</strong></div>
+    <br>
+    <a href="/"><button>⬅ Back to Main App</button></a>
 </body>
 </html>
