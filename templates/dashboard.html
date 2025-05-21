@@ -1,21 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Dashboard Overview</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; }
-        h1 { margin-bottom: 20px; }
-        .stat-box { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 8px; width: 300px; }
-    </style>
-</head>
+<html>
+<head><title>Dashboard</title></head>
 <body>
-    <h1>📊 Deal Finder Dashboard</h1>
-    <div class="stat-box">Total Properties: <strong>{{ total }}</strong></div>
-    <div class="stat-box">LOIs Sent: <strong>{{ loi_count }}</strong></div>
-    <div class="stat-box">High Potential Leads: <strong>{{ high_count }}</strong></div>
-    <div class="stat-box">Average Offer Price: <strong>${{ avg_offer }}</strong></div>
-    <br>
-    <a href="/"><button>⬅ Back to Main App</button></a>
+<h2>Property Dashboard</h2>
+{% if properties %}
+<table border="1">
+<tr>
+    {% for key in properties[0].keys() %}
+        <th>{{ key }}</th>
+    {% endfor %}
+</tr>
+{% for row in properties %}
+<tr>
+    {% for val in row.values() %}
+        <td>{{ val }}</td>
+    {% endfor %}
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<p>No data uploaded yet.</p>
+{% endif %}
 </body>
 </html>

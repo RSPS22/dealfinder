@@ -1,90 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Deal Finder App</title>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <style>
-        table {
-            font-size: 14px;
-        }
-        th {
-            cursor: pointer;
-        }
-        .high-potential {
-            background-color: #d4edda !important;
-        }
-        .sticky-header th {
-            position: sticky;
-            top: 0;
-            background-color: white;
-            z-index: 2;
-        }
-        .sticky-col {
-            position: sticky;
-            left: 0;
-            background-color: white;
-            z-index: 1;
-        }
-        .sticky-col + .sticky-col {
-            left: 120px;
-        }
-    </style>
+    <title>Deal Finder</title>
 </head>
-<body class="p-4">
-    <h2 class="mb-4">✅ Deal Finder App</h2>
-    <form id="upload-form" method="post" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="propertyFile" class="form-label">Property File (.csv)</label>
-            <input type="file" class="form-control" id="propertyFile" name="propertyFile" accept=".csv" required>
-        </div>
-        <div class="mb-3">
-            <label for="compsFile" class="form-label">Comps File (.csv)</label>
-            <input type="file" class="form-control" id="compsFile" name="compsFile" accept=".csv" required>
-        </div>
-        <div class="mb-3">
-            <label for="businessName" class="form-label">Your Business Name</label>
-            <input type="text" class="form-control" id="businessName" name="businessName" placeholder="Optional">
-        </div>
-        <div class="mb-3">
-            <label for="userName" class="form-label">Your Name</label>
-            <input type="text" class="form-control" id="userName" name="userName" placeholder="Optional">
-        </div>
-        <div class="mb-3">
-            <label for="userEmail" class="form-label">Your Email</label>
-            <input type="email" class="form-control" id="userEmail" name="userEmail" placeholder="Optional">
-        </div>
-        <progress id="progressBar" value="0" max="100" style="width:100%; display: none;"></progress><br>
-        <button type="submit" class="btn btn-primary">Upload</button>
+<body>
+    <h2>Deal Finder Upload</h2>
+    <form id="upload-form" method="post" enctype="multipart/form-data" action="/upload">
+        <label>Property CSV:</label><input type="file" name="propertyFile" required><br><br>
+        <label>Comps CSV:</label><input type="file" name="compsFile" required><br><br>
+        <button type="submit">Upload</button>
     </form>
-
-    <div id="table-container" class="mt-4"></div>
-
-    <script>
-        document.getElementById("upload-form").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const progressBar = document.getElementById("progressBar");
-            progressBar.style.display = "block";
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "/upload", true);
-            xhr.upload.onprogress = function(event) {
-                if (event.lengthComputable) {
-                    const percentComplete = (event.loaded / event.total) * 100;
-                    progressBar.value = percentComplete;
-                }
-            };
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    progressBar.value = 100;
-                    location.reload(); // refresh to show table
-                } else {
-                    console.error("Upload failed.");
-                }
-            };
-            xhr.send(formData);
-        });
-    </script>
 </body>
 </html>
