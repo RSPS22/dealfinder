@@ -159,16 +159,27 @@
             formData.append('userName', userName);
             formData.append('userEmail', userEmail);
 
+            console.log("Upload started...");
+            alert("Uploading... Please wait.");
             fetch('/upload', { method: 'POST', body: formData })
                 .then(async res => {
                     try {
                         const json = await res.json();
-                        if (json.success) loadData();
-                        else alert("Upload failed.");
+                        if (json.success) {
+                            alert("Upload successful!");
+                            loadData();
+                        } else {
+                            alert("Upload failed. Please check the file format.");
+                        }
                     } catch (e) {
                         const text = await res.text();
                         alert("Upload failed. Server said: " + text);
+                        console.error("Upload error:", text);
                     }
+                })
+                .catch(err => {
+                    alert("Upload failed: " + err.message);
+                    console.error("Network or server error:", err);
                 });
         };
 
