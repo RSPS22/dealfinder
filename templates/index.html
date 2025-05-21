@@ -160,10 +160,15 @@
             formData.append('userEmail', userEmail);
 
             fetch('/upload', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(json => {
-                    if (json.success) loadData();
-                    else alert("Upload failed.");
+                .then(async res => {
+                    try {
+                        const json = await res.json();
+                        if (json.success) loadData();
+                        else alert("Upload failed.");
+                    } catch (e) {
+                        const text = await res.text();
+                        alert("Upload failed. Server said: " + text);
+                    }
                 });
         };
 
